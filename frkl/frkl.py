@@ -3,6 +3,9 @@
 # python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
+
+
 __metaclass__ = type
 
 log = logging.getLogger("freckles")
@@ -15,3 +18,6 @@ DEFAULT_ABBREVIATIONS = {
 class Frkl(object):
 
     """Base object to hold the configuration itself."""
+
+    def __init__(object):
+        """"""
