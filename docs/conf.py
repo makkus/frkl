@@ -40,7 +40,7 @@ import frkl
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinxcontrib.napoleon', 'sphinx.ext.autosectionlabel', 'sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -258,7 +258,7 @@ texinfo_documents = [
      u'frkl Documentation',
      u'Markus Binsteiner',
      'frkl',
-     'One line description of project.',
+     'Elastic configuration.',
      'Miscellaneous'),
 ]
 

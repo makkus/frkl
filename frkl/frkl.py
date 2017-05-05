@@ -14,4 +14,4 @@ DEFAULT_ABBREVIATIONS = {
 
 class Frkl(object):
 
-    """Bae"""
+    """Base object to hold the configuration itself."""
