@@ -55,6 +55,12 @@ TEST_REGEX_URLS = [
     ("start/frkl_expl/end", "replacement/makkus/freckles/examples/end")
 ]
 
+TEST_ENSURE_URLS = [
+    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.txt"), "asdf")
+    # ("https://github.com", True),
+    # (os.path.realpath(__file__), True)
+]
+
 TEST_PROCESSOR_CHAIN = [frkl.RegexProcessor(TEST_REGEXES), frkl.UrlAbbrevProcessor(TEST_CUSTOM_ABBREVS)]
 
 TEST_CHAIN_URLS = [
@@ -99,7 +105,13 @@ def test_regex_processor(input_url, expected):
 
     assert result == expected
 
+@pytest.mark.parametrize("input_url, expected", TEST_ENSURE_URLS)
+def test_ensure_processor(input_url, expected):
 
+    prc = frkl.EnsureUrlProcessor()
+    result = prc.process(input_url)
+
+    assert result == expected
 
 @pytest.mark.parametrize("input_urls, expected", TEST_CHAIN_URLS)
 def test_config_chain_processors(input_urls, expected):

@@ -3,15 +3,23 @@
 # python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import contextlib
 import copy
 import logging
 import pprint
 import re
 import os
 
+try:
+  from urllib.request import urlopen
+  from urllib.parse import urlparse
+except ImportError:
+  from urlparse import urlparse
+  from urllib import urlopen
+
 __metaclass__ = type
 
-log = logging.getLogger("freckles")
+log = logging.getLogger("frkl")
 
 PLACEHOLDER = -9876
 
@@ -51,13 +59,19 @@ def dict_merge(dct, merge_dct, copy_dct=True):
 
     return dct
 
-
+CONFIG_PROCESSOR_VALUE_TYPES = ["STRING", "URL", "JSON", "YAML", "DICT"]
 
 class ConfigProcessor(object):
     """Abstract base class for config url/content manipulators.
 
     In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be appbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
     """
+
+    def get_supported_input_value_type():
+        return "STRING"
+
+    def get_supported_output_value_type():
+        return "STRING"
 
     def process(self, input_config):
         """Processes the config url or content.
@@ -70,6 +84,50 @@ class ConfigProcessor(object):
         """
 
         return None
+
+class EnsureUrlProcessor(ConfigProcessor):
+    """Makes sure the provided string is a url"""
+
+
+    def get_config(self, config_file_url):
+        """Retrieves the config (if necessary), and returns its content.
+
+        Config can be either a path to a local yaml file, an url to a remote yaml file, or a json string.
+
+        Args:
+          config_file_url (str): the url/path/json content
+        """
+
+        if isinstance(config_file_url, dict):
+            raise Exception("XXX")
+
+        # check if file first
+        if os.path.exists(config_file_url):
+            log.debug("Opening as file: {}".format(config_file_url))
+            with open(config_file_url) as f:
+                content = f.read()
+
+        # check if url
+        elif config_file_url.startswith("http"):
+
+            log.debug("Opening as url: {}".format(config_file_url))
+            verify_ssl = True
+            try:
+                r = requests.get(config_file_url, verify=verify_ssl)
+                content = r.text
+            except:
+                raise Exception("XXX")
+
+        else:
+            raise Exception("XXX")
+
+        return content
+
+    def process(self, input_config):
+
+        result = self.get_config(input_config)
+        return result
+
 
 class RegexProcessor(ConfigProcessor):
 
