@@ -62,6 +62,27 @@ def dict_merge(dct, merge_dct, copy_dct=True):
 
 CONFIG_PROCESSOR_VALUE_TYPES = ["STRING", "URL", "JSON", "YAML", "DICT"]
 
+# ------------------------------------------------------------------------
+# Frkl Exception(s)
+
+class FrklConfigException(Exception):
+
+    def __init__(self, message, errors=[]):
+        """Exception that is thrown when processing configuration urls/content.
+
+        Args:
+          message (str): the error message
+          errors (list): list of root causes and error descriptions
+        """
+
+        super(FrklConfigException, self).__init__(message)
+        if isinstance(errors, Exception):
+            self.errors = [errors]
+        else:
+            self.errors = errors
+
+# ------------------------------------------------------------------------
+
 class ConfigProcessor(object):
     """Abstract base class for config url/content manipulators.
 
@@ -99,9 +120,6 @@ class EnsureUrlProcessor(ConfigProcessor):
           config_file_url (str): the url/path/json content
         """
 
-        if isinstance(config_file_url, dict):
-            raise Exception("XXX")
-
         # check if file first
         if os.path.exists(config_file_url):
             log.debug("Opening as file: {}".format(config_file_url))
@@ -116,11 +134,10 @@ class EnsureUrlProcessor(ConfigProcessor):
             try:
                 r = requests.get(config_file_url, verify=verify_ssl)
                 content = r.text
-            except:
-                raise Exception("XXX")
-
+            except Exception, e:
+                raise FrklConfigException("Could not retrieve configuration from: {}".format(config_file_url), e)
         else:
-            raise Exception("XXX")
+            raise FrklConfigException("Not a supported config file url: {}".format(config_file_url))
 
         return content
 

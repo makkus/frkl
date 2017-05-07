@@ -58,13 +58,12 @@ TEST_REGEX_URLS = [
 TEST_ENSURE_URLS = [
     (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), "asdf"),
     ("https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", "asdf")
-    # ("https://github.com", True),
+    # ("https://github.com", True),s
     # (os.path.realpath(__file__), True)
 ]
 
-TEST_PROCESSOR_CHAIN = [frkl.RegexProcessor(TEST_REGEXES), frkl.UrlAbbrevProcessor(TEST_CUSTOM_ABBREVS)]
-
-TEST_CHAIN_URLS = [
+TEST_PROCESSOR_CHAIN_1 = [frkl.RegexProcessor(TEST_REGEXES), frkl.UrlAbbrevProcessor(TEST_CUSTOM_ABBREVS)]
+TEST_CHAIN_1_URLS = [
     (["gh:makkus/freckles/examples/quickstart.yml"], ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"]),
     (["bb:makkus/freckles/examples/quickstart.yml"], ["https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"]),
     (["gh:frkl_expl/quickstart.yml"], ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"])
@@ -114,10 +113,10 @@ def test_ensure_processor(input_url, expected):
 
     assert result == expected
 
-@pytest.mark.parametrize("input_urls, expected", TEST_CHAIN_URLS)
+@pytest.mark.parametrize("input_urls, expected", TEST_CHAIN_1_URLS)
 def test_config_chain_processors(input_urls, expected):
 
-    f = frkl.Frkl(input_urls, processor_chain=TEST_PROCESSOR_CHAIN)
+    f = frkl.Frkl(input_urls, processor_chain=TEST_PROCESSOR_CHAIN_1)
 
     assert f.configs == expected
 
