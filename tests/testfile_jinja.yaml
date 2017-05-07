@@ -1,0 +1,8 @@
+- config:
+    a: {{ config.a }}
+    b: {{ config.b }}
+
+- config:
+    c: {{ config.c }}
+    d: {{ config.d }}
+

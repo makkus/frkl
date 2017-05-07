@@ -9,6 +9,7 @@ Tests for `frkl` module.
 """
 
 
+import pprint
 import sys
 import unittest
 from contextlib import contextmanager
@@ -33,6 +34,13 @@ TEST_DICTS = [
     ({'a': 1, 'aa': 11}, {'b': 2, 'aa': 22}, {'a': 1, 'b': 2, 'aa': 22})
 ]
 
+TEST_CONVERT_TO_DICT_DICT = [
+    {"config":
+     {"a": 1, "b": 2}},
+    {"config":
+     {"c": 3, "d": 4}}
+]
+
 TEST_CUSTOM_ABBREVS = {
     "test_abbr1": "https://example.url/folder1/folder2/"
 }
@@ -55,11 +63,35 @@ TEST_REGEX_URLS = [
     ("start/frkl_expl/end", "replacement/makkus/freckles/examples/end")
 ]
 
+TESTFILE_1_CONTENT = """- config:
+    a: 1
+    b: 2
+
+- config:
+    c: 3
+    d: 4
+"""
+
 TEST_ENSURE_URLS = [
-    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), "asdf"),
-    ("https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", "asdf")
-    # ("https://github.com", True),s
-    # (os.path.realpath(__file__), True)
+    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), TESTFILE_1_CONTENT),
+    ("https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", TESTFILE_1_CONTENT)
+]
+
+TEST_JINJA_DICT = {
+    "config": {
+      "a": 1,
+      "b": 2,
+      "c": 3,
+      "d": 4
+    }
+}
+TEST_JINJA_URLS = [
+    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_jinja.yaml"), TEST_JINJA_DICT, TESTFILE_1_CONTENT),
+]
+
+TEST_ENSURE_FAIL_URLS = [
+    ("/tmp_does_not_exist/234234234"),
+    ("https://raw222.githubusercontent.com/xxxxxxx8888/asdf.yml")
 ]
 
 TEST_PROCESSOR_CHAIN_1 = [frkl.RegexProcessor(TEST_REGEXES), frkl.UrlAbbrevProcessor(TEST_CUSTOM_ABBREVS)]
@@ -68,6 +100,8 @@ TEST_CHAIN_1_URLS = [
     (["bb:makkus/freckles/examples/quickstart.yml"], ["https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"]),
     (["gh:frkl_expl/quickstart.yml"], ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"])
 ]
+
+# TEST_PROCESSOR_CHAIN_2 = copy.deepcopy(TEST_PROCESSOR_CHAIN_1).append()
 
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):
@@ -88,6 +122,16 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
     assert merged == expected
     assert dict1 == expected
     assert dict2 == dict2_orig
+
+@pytest.mark.parametrize("input_url, env, expected", TEST_JINJA_URLS)
+def test_process_jinja(input_url, env, expected):
+
+    prc = frkl.Jinja2TemplateProcessor(template_values=env)
+    chain = [frkl.EnsureUrlProcessor(), prc]
+    result = frkl.process_chain([input_url], chain)
+
+    assert result[0] == expected
+
 
 @pytest.mark.parametrize("input_url, expected", TEST_ABBREV_URLS)
 def test_expand_config(input_url, expected):
@@ -112,6 +156,26 @@ def test_ensure_processor(input_url, expected):
     result = prc.process(input_url)
 
     assert result == expected
+
+@pytest.mark.parametrize("input_url, expected", TEST_ENSURE_URLS)
+def test_ensure_dict_processor(input_url, expected):
+
+    prc = frkl.EnsureDictProcessor()
+    chain = [frkl.EnsureUrlProcessor(), prc]
+    result = frkl.process_chain([input_url], chain)
+
+    pprint.pprint(result[0])
+    pprint.pprint(TEST_CONVERT_TO_DICT_DICT)
+    assert result[0] == TEST_CONVERT_TO_DICT_DICT
+
+
+@pytest.mark.parametrize("input_url", TEST_ENSURE_FAIL_URLS)
+def test_ensure_fail_processor(input_url):
+
+    prc = frkl.EnsureUrlProcessor()
+    with pytest.raises(frkl.FrklConfigException):
+        prc.process(input_url)
+
 
 @pytest.mark.parametrize("input_urls, expected", TEST_CHAIN_1_URLS)
 def test_config_chain_processors(input_urls, expected):

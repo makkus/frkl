@@ -12,7 +12,8 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'Click==6.7',
     'six==1.10.0',
-    'requests==2.13.0'
+    'requests==2.13.0',
+    'jinja2==2.9.6',
 ]
 
 test_requirements = [

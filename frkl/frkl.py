@@ -10,6 +10,8 @@ import pprint
 import re
 import os
 import requests
+from jinja2 import BaseLoader, Environment, PackageLoader
+import yaml
 
 try:
   from urllib.request import urlopen
@@ -82,6 +84,7 @@ class FrklConfigException(Exception):
             self.errors = errors
 
 # ------------------------------------------------------------------------
+# Processing configuration(s)
 
 class ConfigProcessor(object):
     """Abstract base class for config url/content manipulators.
@@ -133,11 +136,12 @@ class EnsureUrlProcessor(ConfigProcessor):
             verify_ssl = True
             try:
                 r = requests.get(config_file_url, verify=verify_ssl)
+                r.raise_for_status()
                 content = r.text
             except Exception, e:
                 raise FrklConfigException("Could not retrieve configuration from: {}".format(config_file_url), e)
         else:
-            raise FrklConfigException("Not a supported config file url: {}".format(config_file_url))
+            raise FrklConfigException("Not a supported config file url or no local file found: {}".format(config_file_url))
 
         return content
 
@@ -146,6 +150,28 @@ class EnsureUrlProcessor(ConfigProcessor):
         result = self.get_config(input_config)
         return result
 
+class EnsureDictProcessor(ConfigProcessor):
+  """Makes sure the provided string is either valid yaml or json, and converts it into a str.
+  """
+
+  def process(self, input_config):
+
+    config_dict = yaml.load(input_config)
+
+    return config_dict
+
+
+class Jinja2TemplateProcessor(ConfigProcessor):
+
+    def __init__(self, template_values={}):
+        self.template_values = template_values
+
+    def process(self, input_config):
+
+        rtemplate = Environment(loader=BaseLoader()).from_string(input_config)
+        config_string = rtemplate.render(self.template_values)
+
+        return config_string
 
 class RegexProcessor(ConfigProcessor):
 
@@ -254,8 +280,6 @@ class UrlAbbrevProcessor(ConfigProcessor):
             return config
 
 
-DEFAULT_PROCESSOR_CHAIN = [UrlAbbrevProcessor()]
-
 def process_chain(configs, processor_chain):
     """Processes the given input using the proviced chain of processors.
     """
@@ -270,6 +294,9 @@ def process_chain(configs, processor_chain):
         result.append(new_config)
 
     return result
+
+DEFAULT_PROCESSOR_CHAIN = [UrlAbbrevProcessor()]
+# ----------------------------------------------------------------
 
 class Frkl(object):
 
