@@ -56,7 +56,8 @@ TEST_REGEX_URLS = [
 ]
 
 TEST_ENSURE_URLS = [
-    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.txt"), "asdf")
+    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), "asdf"),
+    ("https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", "asdf")
     # ("https://github.com", True),
     # (os.path.realpath(__file__), True)
 ]

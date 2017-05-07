@@ -9,6 +9,7 @@ import logging
 import pprint
 import re
 import os
+import requests
 
 try:
   from urllib.request import urlopen
