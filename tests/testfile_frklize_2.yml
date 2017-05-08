@@ -1,0 +1,13 @@
+vars:
+  "a": 1
+  "b": 2
+
+childs:
+  - task1:
+      vars:
+        "aa": 11
+        "bb": 22
+  - task2:
+      "cc": 33
+      "dd": 44
+

@@ -3,6 +3,7 @@
 # python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from sets import Set
 import contextlib
 import copy
 import logging
@@ -12,6 +13,7 @@ import os
 import requests
 from jinja2 import BaseLoader, Environment, PackageLoader
 import yaml
+from six import string_types
 
 try:
   from urllib.request import urlopen
@@ -25,6 +27,7 @@ __metaclass__ = type
 log = logging.getLogger("frkl")
 
 PLACEHOLDER = -9876
+NO_STEM_INDICATOR = "-99999"
 
 DEFAULT_ABBREVIATIONS = {
     'gh': ["https://raw.githubusercontent.com", PLACEHOLDER, PLACEHOLDER, "master"],
@@ -56,7 +59,7 @@ def dict_merge(dct, merge_dct, copy_dct=True):
     for k, v in merge_dct.items():
         if (k in dct and isinstance(dct[k], dict)
                 and isinstance(merge_dct[k], collections.Mapping)):
-            dict_merge(dct[k], merge_dct[k])
+            dict_merge(dct[k], merge_dct[k], copy_dct=False)
         else:
             dct[k] = merge_dct[k]
 
@@ -150,16 +153,139 @@ class EnsureUrlProcessor(ConfigProcessor):
         result = self.get_config(input_config)
         return result
 
-class EnsureDictProcessor(ConfigProcessor):
+class EnsurePythonObjectProcessor(ConfigProcessor):
   """Makes sure the provided string is either valid yaml or json, and converts it into a str.
   """
 
   def process(self, input_config):
 
     config_dict = yaml.load(input_config)
-
     return config_dict
 
+class FrklConfig(object):
+
+  def __init__(self, config):
+    self.config = copy.deepcopy(config)
+
+  def flatten(self):
+
+    result_dict = {}
+    for var, value_dicts in self.config.items():
+      result_dict[var] = {}
+      for value_dict in value_dicts:
+        dict_merge(result_dict[var], value_dict, copy_dct=False)
+
+    return result_dict
+  
+class FrklConfigs(object):
+
+  def __init__(self):
+    self.configs = []
+
+  def append(self, config):
+    self.configs.append(config)
+
+  def flatten(self):
+    return [conf.flatten() for conf in self.configs]
+
+class FrklDictProcessor(ConfigProcessor):
+  """Expands an elastic dict.
+  """
+
+  def __init__(self, stem_key, default_leaf_key, default_leaf_default_key, other_valid_keys=[], default_leaf_key_map={}):
+
+    self.stem_key = stem_key
+    self.default_leaf_key = default_leaf_key
+    self.default_leaf_default_key = default_leaf_default_key
+    self.other_valid_keys = other_valid_keys
+    if isinstance(default_leaf_key_map, string_types):
+      self.default_leaf_key_map = { "*": default_leaf_key_map }
+    elif isinstance(default_leaf_key_map, dict):
+      self.default_leaf_key_map = default_leaf_key_map
+    else:
+      raise FrklConfigException("Type '{}' not supported for default leaf key map.".format(type(default_leaf_key_map)))
+
+    self.all_keys = Set([self.stem_key, self.default_leaf_key])
+    self.all_keys.update(self.other_valid_keys)
+
+  def process(self, input_config):
+    root = FrklConfigs()
+    self.frklize(input_config, root=root)
+    return root
+
+  def frklize(self, new_value,  root=[], values_so_far_parent={}):
+
+    values_so_far = copy.deepcopy(values_so_far_parent)
+
+    # mkaing sure the new value is a dict, with only allowed keys
+    if isinstance(new_value, string_types):
+      new_value = {self.default_leaf_key: {self.default_leaf_default_key: new_value}}
+    elif isinstance(new_value, (list, tuple)):
+      for item in new_value:
+        self.frklize(item, root, values_so_far)
+      return
+
+    if not isinstance(new_value, dict):
+      raise FrklConfigException("Not a supported type for value '{}': {}".format(new_value, type(new_value)))
+
+    # we check whether any of the known keys is available here, if not,
+    # we check whether there is a default key registered for the name (single) key
+    if not any(x in new_value.keys() for x in self.all_keys):
+      # if there are more than one keys in this, it's difficult to figure out what to do here, so for now let's just not allow that
+      if len(new_value.keys()) != 1:
+        raise FrklConfigException("If not using the full config format, leaf nodes are only allowed to have one key: {}".format(new_value))
+
+      # the string value of the key, this will be end up as the default_leaf_default_key of the default_leaf_key
+      key = new_value.keys()[0]
+
+      # we need to know where to put the value of this, if it's not registered beforehand we raise an exception
+      if not isinstance(new_value[key], dict) or not any(x in new_value[key].keys() for x in self.all_keys):
+        if not key in self.default_leaf_key_map.keys() and not '*' in self.default_leaf_key_map.keys():
+          raise FrklConfigException("Can't find registered default key and value for shortcut value: {}".format(key))
+
+        # if the current value is not a dict, we'll put it there, using the registered default value for this string
+        if not key in self.default_leaf_key_map.keys():
+          insert_default_leaf_key = self.default_leaf_key_map['*']
+        else:
+          insert_default_leaf_key = self.default_leaf_key_map[key]
+        new_value[key] = {insert_default_leaf_key: new_value[key]}
+
+      # if the keys of the (now) dict contain any of the allowed keys, we use the dict directly
+      # TODO: check for 'unallowed' keys?
+      if any(x in new_value[key].keys() for x in self.all_keys):
+        temp_new_value = new_value[key]
+        dict_merge(temp_new_value, {self.default_leaf_key: {self.default_leaf_default_key: key}}, copy_dct=False)
+        new_value = temp_new_value
+      # else we put the whole dict under the default_leaf_key
+      else:
+        temp_new_value = {self.default_leaf_key: {self.default_leaf_default_key: key}}
+        dict_merge(temp_new_value, {self.default_leaf_default_key: new_value[key]}, copy_dct=False)
+        new_value = temp_new_value
+
+    if self.stem_key in new_value.keys() and self.default_leaf_key in new_value.keys():
+      raise FrklConfigException("Configuration can't have both stem key ({}) and default leaf key ({}) on the same level: {}".format(self.stem_key, self.default_leaf_key, new_value))
+
+    stem = new_value.pop(self.stem_key, NO_STEM_INDICATOR)
+
+    temp = {}
+    dict_merge(temp, values_so_far, copy_dct=False)
+    dict_merge(temp, new_value, copy_dct=False)
+    new_value = temp
+
+    for key in new_value.keys():
+      if key not in self.all_keys:
+        raise FrklConfigException("Key '{}' not allowed (in {})".format(key, new_value))
+
+      values_so_far.setdefault(key, []).append(new_value[key])
+
+    if stem == NO_STEM_INDICATOR:
+      if self.default_leaf_key in new_value:
+        root.append(FrklConfig(values_so_far))
+      return
+    elif isinstance(stem, (list, tuple)) and not isinstance(stem, string_types):
+      self.frklize(stem, root, values_so_far)
+    else:
+      raise FrklConfigException("Value of {} must be list (is: '{}')".format(self.stem_key, type(stem)))
 
 class Jinja2TemplateProcessor(ConfigProcessor):
 
