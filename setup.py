@@ -35,7 +35,7 @@ setup(
                  'frkl'},
     entry_points={
         'console_scripts': [
-            'frkl=frkl.cli:main'
+            'frkl=frkl.cli:cli'
         ]
     },
     include_package_data=True,

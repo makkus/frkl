@@ -25,6 +25,8 @@ import copy
 from frkl import frkl
 from frkl import cli
 
+
+
 TEST_DICTS = [
     ({}, {}, {}),
     ({'a': 1}, {'a': 1}, {'a': 1}),
@@ -45,11 +47,6 @@ TEST_CUSTOM_ABBREVS = {
     "test_abbr1": "https://example.url/folder1/folder2/"
 }
 
-TEST_ABBREV_URLS = [
-    # ("gh:makkus/freckles/examples/quickstart.yml", "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"),
-    ("bb:makkus/freckles/examples/quickstart.yml", "https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"),
-    ("test_abbr1:file1", "https://example.url/folder1/folder2/file1")
-]
 
 TEST_REGEXES = {
     "^start": "replacement",
@@ -72,10 +69,6 @@ TESTFILE_1_CONTENT = """- config:
     d: 4
 """
 
-TEST_ENSURE_URLS = [
-    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), TESTFILE_1_CONTENT),
-    ("https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", TESTFILE_1_CONTENT)
-]
 
 TEST_FRKLIZE_DICT_1 = [{
     "vars": {
@@ -93,10 +86,6 @@ TEST_FRKLIZE_DICT_1 = [{
         "task_name": "task2"
     }}]
 
-TEST_FRKLIZE_URLS = [
-    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"), TEST_FRKLIZE_DICT_1),
-    (os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"), TEST_FRKLIZE_DICT_1)
-]
 
 TEST_FRKLIZE_1_RESULT = [
     {'task': {"task_name": 'task1'},
@@ -131,6 +120,29 @@ TEST_CHAIN_1_URLS = [
     (["gh:frkl_expl/quickstart.yml"], ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"])
 ]
 
+REGEX_CHAIN = [frkl.RegexProcessor(TEST_REGEXES)]
+JINJA_CHAIN = [frkl.EnsureUrlProcessor(), frkl.Jinja2TemplateProcessor(template_values=TEST_JINJA_DICT)]
+ABBREV_CHAIN = [frkl.UrlAbbrevProcessor(abbrevs=TEST_CUSTOM_ABBREVS)]
+ENSURE_URL_CHAIN = [frkl.EnsureUrlProcessor()]
+ENSURE_PYTHON_CHAIN = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor()]
+FRKLIZE_CHAIN = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.FrklDictProcessor("childs", "task", "task_name", ["vars"], "vars")]
+
+PROCESSOR_TESTS = [
+    (REGEX_CHAIN, "start_resturl", "replacement_resturl"),
+    (REGEX_CHAIN, "xstart_resturl", "xstart_resturl"),
+    (REGEX_CHAIN, "begin/frkl_expl/end", "begin/makkus/freckles/examples/end"),
+    (REGEX_CHAIN, "start/frkl_expl/end", "replacement/makkus/freckles/examples/end"),
+    (ENSURE_URL_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), TESTFILE_1_CONTENT),
+    (ENSURE_URL_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", TESTFILE_1_CONTENT),
+    (ENSURE_PYTHON_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), TEST_CONVERT_TO_PYTHON_OBJECT_DICT),
+    (ENSURE_PYTHON_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", TEST_CONVERT_TO_PYTHON_OBJECT_DICT),
+    (JINJA_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_jinja.yaml"), TESTFILE_1_CONTENT),
+    (ABBREV_CHAIN, "gh:makkus/freckles/examples/quickstart.yml", "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"),
+    (ABBREV_CHAIN, "bb:makkus/freckles/examples/quickstart.yml", "https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"),
+    # (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"), TEST_FRKLIZE_1_RESULT)
+    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"), TEST_FRKLIZE_1_RESULT)
+]
+
 
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):
@@ -152,73 +164,18 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
     assert dict1 == expected
     assert dict2 == dict2_orig
 
-@pytest.mark.parametrize("input_url, env, expected", TEST_JINJA_URLS)
-def test_process_jinja(input_url, env, expected):
+@pytest.mark.parametrize("processor, input_config, expected", PROCESSOR_TESTS)
+def test_processor(processor, input_config, expected):
 
-    prc = frkl.Jinja2TemplateProcessor(template_values=env)
-    chain = [frkl.EnsureUrlProcessor(), prc]
-    result = frkl.process_chain([input_url], chain)
+    frkl_obj = frkl.Frkl(input_config, processor_chain=processor)
+    result = frkl_obj.process_configs()
 
-    assert result[0] == expected
-
-
-@pytest.mark.parametrize("input_url, expected", TEST_ABBREV_URLS)
-def test_expand_config(input_url, expected):
-
-    prc = frkl.UrlAbbrevProcessor(abbrevs=TEST_CUSTOM_ABBREVS)
-    result = prc.process(input_url)
-
-    assert result == expected
-
-@pytest.mark.parametrize("input_url, expected", TEST_REGEX_URLS)
-def test_regex_processor(input_url, expected):
-
-    prc = frkl.RegexProcessor(TEST_REGEXES)
-    result = prc.process(input_url)
-
-    assert result == expected
-
-@pytest.mark.parametrize("input_url, expected", TEST_ENSURE_URLS)
-def test_ensure_processor(input_url, expected):
-
-    prc = frkl.EnsureUrlProcessor()
-    result = prc.process(input_url)
-
-    assert result == expected
-
-@pytest.mark.parametrize("input_url, expected", TEST_ENSURE_URLS)
-def test_ensure_python_object_processor(input_url, expected):
-
-    prc = frkl.EnsurePythonObjectProcessor()
-    chain = [frkl.EnsureUrlProcessor(), prc]
-    result = frkl.process_chain([input_url], chain)
-
-    assert result[0] == TEST_CONVERT_TO_PYTHON_OBJECT_DICT
-
+    assert result == [expected]
 
 @pytest.mark.parametrize("input_url", TEST_ENSURE_FAIL_URLS)
-def test_ensure_fail_processor(input_url):
+def test_ensure_fail_url_processor(input_url):
 
     prc = frkl.EnsureUrlProcessor()
     with pytest.raises(frkl.FrklConfigException):
         prc.process(input_url)
 
-
-@pytest.mark.parametrize("input_urls, expected", TEST_CHAIN_1_URLS)
-def test_config_chain_processors(input_urls, expected):
-
-    f = frkl.Frkl(input_urls, processor_chain=TEST_PROCESSOR_CHAIN_1)
-
-    assert f.configs == expected
-
-@pytest.mark.parametrize("input_url, expected_dict", TEST_FRKLIZE_URLS)
-def test_frklize_processor(input_url, expected_dict):
-
-    registered_defaults = "vars"
-    prc = frkl.FrklDictProcessor("childs", "task", "task_name", ["vars"], registered_defaults)
-    chain = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), prc]
-    result = frkl.process_chain([input_url], chain)
-
-    result_configs = result[0].flatten()
-
-    assert result_configs == TEST_FRKLIZE_1_RESULT

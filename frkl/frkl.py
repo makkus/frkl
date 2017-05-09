@@ -86,6 +86,23 @@ class FrklConfigException(Exception):
         else:
             self.errors = errors
 
+# ---------------------------------------------------------------------------
+# configuration wrapper
+class FrklConfig(list):
+
+  def flatten(self):
+    result = []
+    for conf in self:
+      result_dict = {}
+      for var, value_dicts in conf.items():
+        result_dict[var] = {}
+        for value_dict in value_dicts:
+          dict_merge(result_dict[var], value_dict, copy_dct=False)
+      result.append(result_dict)
+
+    return result
+
+
 # ------------------------------------------------------------------------
 # Processing configuration(s)
 
@@ -95,11 +112,11 @@ class ConfigProcessor(object):
     In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be appbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
     """
 
-    def get_supported_input_value_type():
-        return "STRING"
+    def process_config(self, input_config):
 
-    def get_supported_output_value_type():
-        return "STRING"
+      result = self.process(input_config)
+
+      return result
 
     def process(self, input_config):
         """Processes the config url or content.
@@ -111,7 +128,7 @@ class ConfigProcessor(object):
           str: processed config url or content
         """
 
-        return None
+        raise Exception("Base ConfigProcess is not supposed to execute process method")
 
 class EnsureUrlProcessor(ConfigProcessor):
     """Makes sure the provided string is a url"""
@@ -162,31 +179,6 @@ class EnsurePythonObjectProcessor(ConfigProcessor):
     config_dict = yaml.load(input_config)
     return config_dict
 
-class FrklConfig(object):
-
-  def __init__(self, config):
-    self.config = copy.deepcopy(config)
-
-  def flatten(self):
-
-    result_dict = {}
-    for var, value_dicts in self.config.items():
-      result_dict[var] = {}
-      for value_dict in value_dicts:
-        dict_merge(result_dict[var], value_dict, copy_dct=False)
-
-    return result_dict
-  
-class FrklConfigs(object):
-
-  def __init__(self):
-    self.configs = []
-
-  def append(self, config):
-    self.configs.append(config)
-
-  def flatten(self):
-    return [conf.flatten() for conf in self.configs]
 
 class FrklDictProcessor(ConfigProcessor):
   """Expands an elastic dict.
@@ -209,8 +201,10 @@ class FrklDictProcessor(ConfigProcessor):
     self.all_keys.update(self.other_valid_keys)
 
   def process(self, input_config):
-    root = FrklConfigs()
+    root = FrklConfig()
     self.frklize(input_config, root=root)
+
+    pprint.pprint(root)
     return root
 
   def frklize(self, new_value,  root=[], values_so_far_parent={}):
@@ -280,7 +274,7 @@ class FrklDictProcessor(ConfigProcessor):
 
     if stem == NO_STEM_INDICATOR:
       if self.default_leaf_key in new_value:
-        root.append(FrklConfig(values_so_far))
+        root.append(values_so_far)
       return
     elif isinstance(stem, (list, tuple)) and not isinstance(stem, string_types):
       self.frklize(stem, root, values_so_far)
@@ -406,27 +400,12 @@ class UrlAbbrevProcessor(ConfigProcessor):
             return config
 
 
-def process_chain(configs, processor_chain):
-    """Processes the given input using the proviced chain of processors.
-    """
-
-    result = []
-
-    for c in configs:
-        new_config = c
-
-        for p in processor_chain:
-            new_config = p.process(new_config)
-        result.append(new_config)
-
-    return result
-
 DEFAULT_PROCESSOR_CHAIN = [UrlAbbrevProcessor()]
 # ----------------------------------------------------------------
 
 class Frkl(object):
 
-    def __init__(self, configs, stem_key="config", other_valid_keys=[], processor_chain=DEFAULT_PROCESSOR_CHAIN):
+    def __init__(self, configs=[], stem_key="config", other_valid_keys=[], processor_chain=DEFAULT_PROCESSOR_CHAIN):
         """Base object that holds the configuration.
 
         Args:
@@ -440,14 +419,61 @@ class Frkl(object):
           str: the final config url, all abbreviations replaced
         """
 
-        self.orig_configs = configs
         self.stem_key = stem_key
         self.other_valid_keys = other_valid_keys
+        if not isinstance(processor_chain, (list, tuple)):
+          processor_chain = [processor_chain]
         self.processor_chain = processor_chain
 
-        self.configs = process_chain(self.orig_configs, self.processor_chain)
+        self.configs = []
+        self.add_configs(configs)
 
+        self.unprocessed = None
+        self.processed = None
 
+    def add_configs(self, configs):
+
+      if not isinstance(configs, (list, tuple)):
+        configs = [configs]
+
+      # ensure configs are wrapped
+      for c in configs:
+          self.configs.append(c)
+
+      self.unprocessed = None
+      self.processed = None
+
+    def process_configs(self, unprocessed=False):
+      """Kicks off the processing of the configuration urls.
+
+      Args:
+        unprocessed (bool): returns unprocessed results (if applicable -- this is mostly used for 'frklized' configs to get the whole history of a configuration overlay)
+
+      Returns:
+        list: a list of configuration items, corresponding to the input configuration urls
+      """
+
+      if self.processed:
+        if unprocessed:
+          return self.unprocessed
+        else:
+          return self.processed
+
+      self.processed = []
+      self.unprocessed = []
+
+      for c in self.configs:
+        new_config = c
+
+        for p in self.processor_chain:
+          new_config = p.process_config(new_config)
+
+        self.unprocessed.append(new_config)
+        if isinstance(new_config, FrklConfig):
+          new_config = new_config.flatten()
+        self.processed.append(new_config)
+
+      return self.processed
 
     def get_config(config):
         """Retrieves the configuration, including pre-processing.
@@ -470,8 +496,6 @@ class Frkl(object):
             log.debug("Opening as file: {}".format(config))
             with open(config_file_url) as f:
                 content = f.read()
-
-        
 
     def frklize_config(self, root, configs):
         """Read all configs in order, generate a composite.
