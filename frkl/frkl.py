@@ -3,7 +3,11 @@
 # python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from sets import Set
+try:
+    set
+except NameError:
+    from sets import Set as set
+
 import contextlib
 import copy
 import logging
@@ -168,7 +172,7 @@ class EnsureUrlProcessor(ConfigProcessor):
                 r = requests.get(config_file_url, verify=verify_ssl)
                 r.raise_for_status()
                 content = r.text
-            except Exception, e:
+            except (Exception) as e:
                 raise FrklConfigException("Could not retrieve configuration from: {}".format(config_file_url), e)
         else:
             raise FrklConfigException("Not a supported config file url or no local file found: {}".format(config_file_url))
@@ -207,7 +211,7 @@ class FrklDictProcessor(ConfigProcessor):
     else:
       raise FrklConfigException("Type '{}' not supported for default leaf key map.".format(type(default_leaf_key_map)))
 
-    self.all_keys = Set([self.stem_key, self.default_leaf_key])
+    self.all_keys = set([self.stem_key, self.default_leaf_key])
     self.all_keys.update(self.other_valid_keys)
 
   def process(self, input_config):
@@ -240,7 +244,7 @@ class FrklDictProcessor(ConfigProcessor):
         raise FrklConfigException("If not using the full config format, leaf nodes are only allowed to have one key: {}".format(new_value))
 
       # the string value of the key, this will be end up as the default_leaf_default_key of the default_leaf_key
-      key = new_value.keys()[0]
+      key = list(new_value.keys())[0]
 
       # we need to know where to put the value of this, if it's not registered beforehand we raise an exception
       if not isinstance(new_value[key], dict) or not any(x in new_value[key].keys() for x in self.all_keys):
@@ -386,7 +390,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
         if prefix in self.abbrevs.keys():
 
-            if isinstance(self.abbrevs[prefix], basestring):
+            if isinstance(self.abbrevs[prefix], string_types):
                 return "{}{}".format(self.abbrevs[prefix], rest)
             else:
                 tokens = rest.split("/")

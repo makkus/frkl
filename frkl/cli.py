@@ -4,7 +4,7 @@ import click
 from six import string_types
 import sys
 import logging
-from frkl import Frkl
+from .frkl import Frkl
 import pprint
 import yaml
 
