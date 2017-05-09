@@ -112,20 +112,30 @@ class ConfigProcessor(object):
     In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be appbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
     """
 
-    def process_config(self, input_config):
+    def process_config(self, input_config, current_context={}):
+      """Kick of processing using the sub-classes 'process' method.
+
+      Args:
+        input_config (object): the configuration to process
+        current_context (dict): (optional) current context, containing information about previously processed configurations
+
+      Returns:
+        object: the processed configuration
+      """
 
       result = self.process(input_config)
 
       return result
 
-    def process(self, input_config):
+    def process(self, input_config, current_context={}):
         """Processes the config url or content.
 
         Args:
-          input_config (str): input configuration url or content
+          input_config (object): input configuration url or content
+          current_context (dict): (optional) current context, containing information about previously processed configurations
 
         Returns:
-          str: processed config url or content
+          object: processed config url or content
         """
 
         raise Exception("Base ConfigProcess is not supposed to execute process method")
@@ -286,7 +296,7 @@ class Jinja2TemplateProcessor(ConfigProcessor):
     def __init__(self, template_values={}):
         self.template_values = template_values
 
-    def process(self, input_config):
+    def process(self, input_config, context={}):
 
         rtemplate = Environment(loader=BaseLoader()).from_string(input_config)
         config_string = rtemplate.render(self.template_values)
@@ -338,7 +348,9 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 self.abbrevs = copy.deepcopy(abbrevs)
 
     def process(self, input_config):
-        return self.expand_config(input_config)
+
+        result = self.expand_config(input_config)
+        return result
 
     def expand_config(self, config):
         """Expands abbreviated configuration urls that start with `<token>:`.
@@ -378,13 +390,19 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 return "{}{}".format(self.abbrevs[prefix], rest)
             else:
                 tokens = rest.split("/")
+                tokens_copy = copy.copy(tokens)
+
+                min_tokens = self.abbrevs[prefix].count(PLACEHOLDER)
+
                 result_string = ""
                 for t in self.abbrevs[prefix]:
 
                     if t == PLACEHOLDER:
                         if not tokens:
-                            raise FrecklesConfigError("Can't expand url '{}': not enough parts.", 'config', url)
+                            raise FrklConfigException("Can't expand url '{}': not enough parts, need at least {} parts seperated by '/' after ':'".format(config, min_tokens))
                         to_append = tokens.pop(0)
+                        if not to_append:
+                          raise FrklConfigException("Last token empty, can't expand: {}".format(tokens_copy))
                     else:
                         to_append = t
 
@@ -395,12 +413,12 @@ class UrlAbbrevProcessor(ConfigProcessor):
                     postfix = "/".join(tokens)
                     result_string += postfix
 
-                    return result_string
+                return result_string
         else:
             return config
 
 
-DEFAULT_PROCESSOR_CHAIN = [UrlAbbrevProcessor()]
+DEFAULT_PROCESSOR_CHAIN = [UrlAbbrevProcessor(), EnsureUrlProcessor(), EnsurePythonObjectProcessor()]
 # ----------------------------------------------------------------
 
 class Frkl(object):
@@ -440,8 +458,7 @@ class Frkl(object):
       for c in configs:
           self.configs.append(c)
 
-      self.unprocessed = None
-      self.processed = None
+      self.context = {}
 
     def process_configs(self, unprocessed=False):
       """Kicks off the processing of the configuration urls.
@@ -453,27 +470,26 @@ class Frkl(object):
         list: a list of configuration items, corresponding to the input configuration urls
       """
 
-      if self.processed:
-        if unprocessed:
-          return self.unprocessed
-        else:
-          return self.processed
+      if self.context:
+        return self.context.get('processed', [])
 
-      self.processed = []
-      self.unprocessed = []
+      self.context = {}
 
-      for c in self.configs:
+      for idx, c in enumerate(self.configs):
+
         new_config = c
 
         for p in self.processor_chain:
-          new_config = p.process_config(new_config)
+          new_config = p.process_config(new_config, copy.deepcopy(self.context))
+          self.context.setdefault("config_{}".format(idx), {}).setdefault("history", []).append(new_config)
 
-        self.unprocessed.append(new_config)
+        self.context.setdefault('unprocessed', []).append(new_config)
         if isinstance(new_config, FrklConfig):
           new_config = new_config.flatten()
-        self.processed.append(new_config)
 
-      return self.processed
+        self.context.setdefault('processed', []).append(new_config)
+
+      return self.context.get('processed', [])
 
     def get_config(config):
         """Retrieves the configuration, including pre-processing.

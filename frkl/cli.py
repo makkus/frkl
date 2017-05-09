@@ -5,6 +5,8 @@ from six import string_types
 import sys
 import logging
 from frkl import Frkl
+import pprint
+import yaml
 
 from . import __version__ as VERSION
 
@@ -39,8 +41,12 @@ def cli(version):
 @click.argument('config', required=False, nargs=-1)
 def print_config(config):
 
-    frkl = Frkl()
-    print("XX")
+    frkl = Frkl(config)
+
+    frkl_cfg = frkl.process_configs()
+
+    print(yaml.dump(frkl_cfg, default_flow_style=False))
+
 
 
 
