@@ -128,6 +128,7 @@ ABBREV_CHAIN = [frkl.UrlAbbrevProcessor(abbrevs=TEST_CUSTOM_ABBREVS)]
 ENSURE_URL_CHAIN = [frkl.EnsureUrlProcessor()]
 ENSURE_PYTHON_CHAIN = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor()]
 FRKLIZE_CHAIN = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.FrklDictProcessor("childs", "task", "task_name", ["vars"], "vars")]
+ABBREV_FRKLIZE_CHAIN = [frkl.UrlAbbrevProcessor(), frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.FrklDictProcessor("childs", "task", "task_name", ["vars"], "vars")]
 
 PROCESSOR_TESTS = [
     (REGEX_CHAIN, "start_resturl", ["replacement_resturl"]),
@@ -144,7 +145,8 @@ PROCESSOR_TESTS = [
     # (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"), [TEST_FRKLIZE_1_RESULT])
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"), [TEST_FRKLIZE_1_RESULT]),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_3.yml"), [TEST_FRKLIZE_1_RESULT]),
-    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_4.yml"), TEST_FRKLIZE_1_RESULT_DOUBLE)
+    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_4.yml"), TEST_FRKLIZE_1_RESULT_DOUBLE),
+    (ABBREV_FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_5.yml"), TEST_FRKLIZE_1_RESULT_DOUBLE)
 ]
 
 
