@@ -96,6 +96,8 @@ TEST_FRKLIZE_1_RESULT = [
     }
 ]
 
+TEST_FRKLIZE_1_RESULT_DOUBLE = [TEST_FRKLIZE_1_RESULT, TEST_FRKLIZE_1_RESULT]
+
 TEST_JINJA_DICT = {
     "config": {
       "a": 1,
@@ -128,19 +130,21 @@ ENSURE_PYTHON_CHAIN = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcess
 FRKLIZE_CHAIN = [frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.FrklDictProcessor("childs", "task", "task_name", ["vars"], "vars")]
 
 PROCESSOR_TESTS = [
-    (REGEX_CHAIN, "start_resturl", "replacement_resturl"),
-    (REGEX_CHAIN, "xstart_resturl", "xstart_resturl"),
-    (REGEX_CHAIN, "begin/frkl_expl/end", "begin/makkus/freckles/examples/end"),
-    (REGEX_CHAIN, "start/frkl_expl/end", "replacement/makkus/freckles/examples/end"),
-    (ENSURE_URL_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), TESTFILE_1_CONTENT),
-    (ENSURE_URL_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", TESTFILE_1_CONTENT),
-    (ENSURE_PYTHON_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), TEST_CONVERT_TO_PYTHON_OBJECT_DICT),
-    (ENSURE_PYTHON_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", TEST_CONVERT_TO_PYTHON_OBJECT_DICT),
-    (JINJA_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_jinja.yaml"), TESTFILE_1_CONTENT),
-    (ABBREV_CHAIN, "gh:makkus/freckles/examples/quickstart.yml", "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"),
-    (ABBREV_CHAIN, "bb:makkus/freckles/examples/quickstart.yml", "https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"),
-    # (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"), TEST_FRKLIZE_1_RESULT)
-    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"), TEST_FRKLIZE_1_RESULT)
+    (REGEX_CHAIN, "start_resturl", ["replacement_resturl"]),
+    (REGEX_CHAIN, "xstart_resturl", ["xstart_resturl"]),
+    (REGEX_CHAIN, "begin/frkl_expl/end", ["begin/makkus/freckles/examples/end"]),
+    (REGEX_CHAIN, "start/frkl_expl/end", ["replacement/makkus/freckles/examples/end"]),
+    (ENSURE_URL_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), [TESTFILE_1_CONTENT]),
+    (ENSURE_URL_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", [TESTFILE_1_CONTENT]),
+    (ENSURE_PYTHON_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), [TEST_CONVERT_TO_PYTHON_OBJECT_DICT]),
+    (ENSURE_PYTHON_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", [TEST_CONVERT_TO_PYTHON_OBJECT_DICT]),
+    (JINJA_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_jinja.yaml"), [TESTFILE_1_CONTENT]),
+    (ABBREV_CHAIN, "gh:makkus/freckles/examples/quickstart.yml", ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"]),
+    (ABBREV_CHAIN, "bb:makkus/freckles/examples/quickstart.yml", ["https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"]),
+    # (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"), [TEST_FRKLIZE_1_RESULT])
+    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"), [TEST_FRKLIZE_1_RESULT]),
+    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_3.yml"), [TEST_FRKLIZE_1_RESULT]),
+    (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_4.yml"), TEST_FRKLIZE_1_RESULT_DOUBLE)
 ]
 
 
@@ -168,9 +172,13 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
 def test_processor(processor, input_config, expected):
 
     frkl_obj = frkl.Frkl(input_config, processor_chain=processor)
-    result = frkl_obj.process_configs()
+    result = frkl_obj.process()
 
-    assert result == [expected]
+    pprint.pprint(result)
+    print("XXX")
+    pprint.pprint(expected)
+
+    assert result == expected
 
 @pytest.mark.parametrize("input_url", TEST_ENSURE_FAIL_URLS)
 def test_ensure_fail_url_processor(input_url):

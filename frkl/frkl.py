@@ -32,12 +32,17 @@ log = logging.getLogger("frkl")
 
 PLACEHOLDER = -9876
 NO_STEM_INDICATOR = "-99999"
+RECURSIVE_LOAD_INDICATOR = "-67323"
 
 DEFAULT_ABBREVIATIONS = {
     'gh': ["https://raw.githubusercontent.com", PLACEHOLDER, PLACEHOLDER, "master"],
     'bb': ["https://bitbucket.org", PLACEHOLDER, PLACEHOLDER, "src", "master"]
 }
 
+
+def is_list_of_strings(input_obj):
+
+  return bool(input_obj) and isinstance(input_obj, (list, tuple)) and not isinstance(input_obj, string_types) and all(isinstance(item, string_types) for item in input_obj)
 
 def dict_merge(dct, merge_dct, copy_dct=True):
     """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
@@ -218,7 +223,6 @@ class FrklDictProcessor(ConfigProcessor):
     root = FrklConfig()
     self.frklize(input_config, root=root)
 
-    pprint.pprint(root)
     return root
 
   def frklize(self, new_value,  root=[], values_so_far_parent={}):
@@ -450,8 +454,6 @@ class Frkl(object):
         self.configs = []
         self.add_configs(configs)
 
-        self.unprocessed = None
-        self.processed = None
 
     def add_configs(self, configs):
 
@@ -462,38 +464,45 @@ class Frkl(object):
       for c in configs:
           self.configs.append(c)
 
-      self.context = {}
+    def process(self):
 
-    def process_configs(self, unprocessed=False):
+      self.context = self.process_configs(self.configs, {})
+
+      return self.context["processed"]
+
+
+    def process_configs(self, configs, context):
       """Kicks off the processing of the configuration urls.
 
       Args:
-        unprocessed (bool): returns unprocessed results (if applicable -- this is mostly used for 'frklized' configs to get the whole history of a configuration overlay)
+        configs (list): the configs to process
 
       Returns:
         list: a list of configuration items, corresponding to the input configuration urls
       """
 
-      if self.context:
-        return self.context.get('processed', [])
-
-      self.context = {}
-
-      for idx, c in enumerate(self.configs):
+      for idx, c in enumerate(configs):
 
         new_config = c
 
         for p in self.processor_chain:
-          new_config = p.process_config(new_config, copy.deepcopy(self.context))
-          self.context.setdefault("config_{}".format(idx), {}).setdefault("history", []).append(new_config)
+          new_config = p.process_config(new_config, copy.deepcopy(context))
+          context.setdefault("config_{}".format(idx), {}).setdefault("history", []).append(new_config)
+          # check whether result is a list of strings. if it is, we use those recursivly as new configs and put them before the next config
+          if is_list_of_strings(new_config):
+            self.process_configs(new_config, context)
+            new_config = RECURSIVE_LOAD_INDICATOR
+            break
 
-        self.context.setdefault('unprocessed', []).append(new_config)
+        if new_config == RECURSIVE_LOAD_INDICATOR:
+          continue
+        context.setdefault('unprocessed', []).append(new_config)
         if isinstance(new_config, FrklConfig):
           new_config = new_config.flatten()
 
-        self.context.setdefault('processed', []).append(new_config)
+        context.setdefault('processed', []).append(new_config)
 
-      return self.context.get('processed', [])
+      return context
 
     def get_config(config):
         """Retrieves the configuration, including pre-processing.
