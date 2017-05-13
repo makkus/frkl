@@ -5,11 +5,13 @@
 - processor:
     name: python_object
 - processor:
+    name: load_more_configs
+- processor:
     name: expand
   init:
     stem_key: childs
     default_leaf_key: task
-    default_leaf_default_key: name
+    default_leaf_default_key: task_name
     other_valid_keys: 
        - vars
     default_leaf_key_map: vars

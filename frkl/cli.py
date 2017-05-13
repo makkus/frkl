@@ -39,20 +39,24 @@ def cli(ctx, frkl, version):
         click.echo(VERSION)
         sys.exit(0)
 
-    frkl_conf = Frkl(frkl)
+    frkl_obj = Frkl.factory(frkl)
 
+    ctx.obj = {}
     ctx.obj['frkl'] = frkl_obj
 
 
 @cli.command("print-config")
 @click.argument('config', required=False, nargs=-1)
 @click.pass_context
-def print_config(frkl, config):
+def print_config(ctx, config):
 
+    frkl = ctx.obj['frkl']
 
-    frkl_cfg = frkl.process()
+    frkl.set_configs(config)
 
-    print(yaml.dump(frkl_cfg, default_flow_style=False))
+    result = frkl.frkl()
+
+    print(yaml.dump(result, default_flow_style=False))
 
 
 

@@ -150,6 +150,7 @@ class FrklConfigException(Exception):
 # ---------------------------------------------------------------------------
 # configuration wrapper
 class FrklConfig(list):
+
     def flatten(self):
         result = []
         for conf in self:
@@ -633,7 +634,7 @@ class Frkl(object):
         if not isinstance(configs, (list, tuple)):
             configs = [configs]
 
-        self.configs = configs
+        self.configs = list(configs)
 
         self.context = None
 
@@ -655,7 +656,7 @@ class Frkl(object):
 
         self.context = None
 
-    def process(self, result_key='processed'):
+    def process(self, result_key='unprocessed'):
 
         if self.context:
             if result_key == '*':
@@ -681,6 +682,7 @@ class Frkl(object):
       """
 
         idx = 0
+
         configs_copy = copy.deepcopy(configs)
         new_config = configs_copy.pop(0)
 
@@ -710,10 +712,9 @@ class Frkl(object):
 
             if last_processing_result != None:
                 context.setdefault('unprocessed', []).append(last_processing_result)
-                if isinstance(new_config, FrklConfig):
+                if isinstance(last_processing_result, FrklConfig):
                     last_processing_result = last_processing_result.flatten()
-
-                context.setdefault('processed', []).append(last_processing_result)
+                    context.setdefault('frkl', []).append(last_processing_result)
 
             idx = idx + 1
             try:
@@ -723,12 +724,23 @@ class Frkl(object):
 
 
         context.setdefault('unprocessed', [])
-        context.setdefault('processed', [])
+        context.setdefault('frkl', [])
         context['flattened'] = [
-            item for sublist in context['processed'] for item in sublist
+            item for sublist in context['frkl'] for item in sublist
         ]
 
         return context
+
+    def frkl(self):
+        """Returns a flattened list of a frklized config chain.
+
+        Returns:
+        list: a list of expanded config items
+        """
+
+        frkl_list = self.process('frkl')
+        return [item for sublist in frkl_list for item in sublist]
+
 
     def get_config(config):
         """Retrieves the configuration, including pre-processing.

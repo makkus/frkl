@@ -44,7 +44,8 @@ setup(
             'python_object=frkl:EnsurePythonObjectProcessor',
             'expand=frkl:FrklDictProcessor',
             'template=frkl:Jinja2TemplateProcessor',
-            'regex=frkl:RegexProcessor'
+            'regex=frkl:RegexProcessor',
+            'load_more_configs=frkl:LoadMoreConfigsProcessor'
         ]
     },
     include_package_data=True,
