@@ -688,26 +688,32 @@ class Frkl(object):
 
             log.debug("Processing config: {}".format(new_config))
 
+            if len(configs_copy) > 20:
+                raise FrklConfigException("More than 1024 configs, this looks like a loop, exiting.")
+
+            last_processing_result = None
             for current_processor in self.processor_chain:
-                new_config = current_processor.process_config(
+                result = current_processor.process_config(
                     new_config, copy.deepcopy(context))
 
-                additional_configs = new_config.more_configs
+                additional_configs = copy.deepcopy(result.more_configs)
                 additional_configs.extend(configs_copy)
                 configs_copy = additional_configs
-                new_config = new_config.processed_config
+                last_processing_result = result.processed_config
 
                 context.setdefault("config_{}".format(idx), {}).setdefault(
-                    "history", []).append(new_config)
-                if new_config == None:
+                    "history", []).append(last_processing_result)
+                if last_processing_result == None:
                     break;
 
-            if new_config != None:
-                context.setdefault('unprocessed', []).append(new_config)
-                if isinstance(new_config, FrklConfig):
-                    new_config = new_config.flatten()
+                new_config = last_processing_result
 
-                context.setdefault('processed', []).append(new_config)
+            if last_processing_result != None:
+                context.setdefault('unprocessed', []).append(last_processing_result)
+                if isinstance(new_config, FrklConfig):
+                    last_processing_result = last_processing_result.flatten()
+
+                context.setdefault('processed', []).append(last_processing_result)
 
             idx = idx + 1
             try:

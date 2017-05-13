@@ -261,9 +261,9 @@ def test_processor(processor, input_config, expected):
     frkl_obj = frkl.Frkl(input_config, processor_chain=processor)
     result = frkl_obj.process()
 
-    pprint.pprint(result)
-    print("XXX")
-    pprint.pprint(expected)
+    # pprint.pprint(result)
+    # print("XXX")
+    # pprint.pprint(expected)
 
     assert result == expected
 
