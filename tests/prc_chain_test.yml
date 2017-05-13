@@ -1,0 +1,6 @@
+- prc:
+    prc_type: "UrlAbbrevProcessor"
+  vars:
+    test1: "test2"
+
+    

@@ -12,3 +12,6 @@ sphinxcontrib-napoleon==0.6.1
 ipython==5.3.0 # pyup: ignore
 flake8-pep257==1.0.5
 pytest==3.0.7
+pep8==1.7.0
+yapf==0.16.1
+isort==4.2.5

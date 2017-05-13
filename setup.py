@@ -14,6 +14,7 @@ requirements = [
     'six==1.10.0',
     'requests==2.13.0',
     'jinja2==2.9.6',
+    'stevedore==1.18.0'
 ]
 
 test_requirements = [
@@ -36,6 +37,14 @@ setup(
     entry_points={
         'console_scripts': [
             'frkl=frkl.cli:cli'
+        ],
+        'frkl.frk': [
+            'abbrev=frkl:UrlAbbrevProcessor',
+            'url=frkl:EnsureUrlProcessor',
+            'python_object=frkl:EnsurePythonObjectProcessor',
+            'expand=frkl:FrklDictProcessor',
+            'template=frkl:Jinja2TemplateProcessor',
+            'regex=frkl:RegexProcessor'
         ]
     },
     include_package_data=True,

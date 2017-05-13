@@ -1,0 +1,27 @@
+- processor:
+    name: abbrev
+- processor:
+    name: url
+- processor:
+    name: python_object
+- processor:
+    name: expand
+  init:
+    stem_key: childs
+    default_leaf_key: task
+    default_leaf_default_key: name
+    other_valid_keys: 
+       - vars
+    default_leaf_key_map: vars
+
+
+
+
+
+
+
+
+
+
+
+    

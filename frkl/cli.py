@@ -29,21 +29,28 @@ class Config(object):
 
 
 @click.group(invoke_without_command=True)
+@click.option('--frkl', '-f', multiple=True, help="config to bootstrap the frkl object itself")
 @click.option('--version', help='the version of frkl you are using', is_flag=True)
-def cli(version):
+@click.pass_context
+def cli(ctx, frkl, version):
     """Console script for frkl"""
 
     if version:
         click.echo(VERSION)
         sys.exit(0)
 
+    frkl_conf = Frkl(frkl)
+
+    ctx.obj['frkl'] = frkl_obj
+
+
 @cli.command("print-config")
 @click.argument('config', required=False, nargs=-1)
-def print_config(config):
+@click.pass_context
+def print_config(frkl, config):
 
-    frkl = Frkl(config)
 
-    frkl_cfg = frkl.process_configs()
+    frkl_cfg = frkl.process()
 
     print(yaml.dump(frkl_cfg, default_flow_style=False))
 
