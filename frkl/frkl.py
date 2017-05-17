@@ -366,7 +366,8 @@ class FrklProcessor(ConfigProcessor):
                     self.default_leaf_default_key: config
                 }
             }
-        elif isinstance(config, (list, tuple)):
+
+        if isinstance(config, (list, tuple)):
             for item in config:
                 for result in self.frklize(item, copy.deepcopy(current_vars)):
                     yield result
