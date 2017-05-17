@@ -1,0 +1,22 @@
+vars:
+  "a": 1
+  "b": 2
+
+childs:
+  - vars:
+     "aa": 11
+     "bb": 22
+    childs:
+      - test4:
+          cc: 33
+      - test5:
+          dd: 44
+      - vars:
+          ee: 55
+        task:
+          task_name_2: "What"
+  - task:
+     task_name_3: "whow"
+
+
+

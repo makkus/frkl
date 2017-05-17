@@ -5,13 +5,16 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import abc
+import collections
 import contextlib
 import copy
+import itertools
 import logging
 import os
 import pprint
 import re
 import sys
+import types
 
 import requests
 import six
@@ -35,6 +38,14 @@ except ImportError:
 __metaclass__ = type
 
 log = logging.getLogger("frkl")
+
+FRKL_DEFAULT_PARAMS = {
+        "stem_key": "childs",
+        "default_leaf_key": "task",
+        "default_leaf_default_key": "task_name",
+        "other_valid_keys": ["vars"],
+        "default_leaf_key_map": "vars"
+    }
 
 PLACEHOLDER = -9876
 NO_STEM_INDICATOR = "-99999"
@@ -164,15 +175,6 @@ class FrklConfig(list):
         return result
 
 
-# ------------------------------------------------------------------------
-# Processing configuration(s)
-class ProcessResult(object):
-
-    def __init__(self, processed_config, more_configs=[]):
-
-        self.processed_config = processed_config
-        self.more_configs = more_configs
-
 @six.add_metaclass(abc.ABCMeta)
 class ConfigProcessor(object):
     """Abstract base class for config url/content manipulators.
@@ -198,36 +200,54 @@ class ConfigProcessor(object):
 
         return True
 
-    def process_config(self, input_config, current_context):
+    def set_current_config(self, input_config):
+        """Sets the current configuration.
+
+        Args:
+          input_config (object): current configuration to be processed
+        """
+
+        self.current_input_config = input_config
+        self.new_config()
+
+    def new_config(self):
+        """Can be overwritten to initially compute a new config after it is first set."""
+
+        pass
+
+    def process_config(self):
         """Kick of processing using the sub-classes 'process' method.
 
       Args:
         input_config (object): the configuration to process
-        current_context (dict): (optional) current context, containing information about previously processed configurations
 
       Returns:
         object: the processed configuration, if the return value is a tuple of size 2, the first element is the processed configuration, and the 2nd one is the (changed) list of configs
       """
 
-        result = self.process(input_config)
-        if not isinstance(result, ProcessResult):
-            return ProcessResult(result)
-        else:
-            return result
+        result = self.process()
+        return result
 
-    @abc.abstractmethod
-    def process(self, input_config, current_context={}):
+    def get_additional_configs(self):
+        """Returns additional configs if applicable.
+
+        Returns:
+          list: other configs to be processed next
+        """
+
+        return None
+
+    def process(self):
         """Processes the config url or content.
 
         Args:
           input_config (object): input configuration url or content
-          current_context (dict): (optional) current context, containing information about previously processed configurations
 
         Returns:
           object: processed config url or content
         """
 
-        # raise Exception("Base ConfigProcess is not supposed to execute process method")
+        return self.current_input_config
 
 
 class EnsureUrlProcessor(ConfigProcessor):
@@ -268,9 +288,9 @@ class EnsureUrlProcessor(ConfigProcessor):
 
         return content
 
-    def process(self, input_config):
+    def process(self):
 
-        result = self.get_config(input_config)
+        result = self.get_config(self.current_input_config)
         return result
 
 
@@ -278,15 +298,23 @@ class EnsurePythonObjectProcessor(ConfigProcessor):
     """Makes sure the provided string is either valid yaml or json, and converts it into a str.
   """
 
-    def process(self, input_config):
+    def process(self):
 
-        config_obj = yaml.load(input_config)
+        config_obj = yaml.load(self.current_input_config)
         return config_obj
 
 
-class FrklDictProcessor(ConfigProcessor):
-    """Expands an elastic dict.
-  """
+class FrklProcessor(ConfigProcessor):
+
+    def __init__(self, init_params={}):
+        self.init_params = init_params
+
+        msg = self.validate_init()
+        if not msg == True:
+            raise FrklConfigException(msg)
+
+        self.values_so_far = {}
+        self.configs = []
 
     def validate_init(self):
 
@@ -307,125 +335,114 @@ class FrklDictProcessor(ConfigProcessor):
         self.all_keys = set([self.stem_key, self.default_leaf_key])
         self.all_keys.update(self.other_valid_keys)
 
+        self.break_key = self.init_params.get('break_key', None)
+        self.break_marker = self.init_params.get('break_marker', None)
+
         return True
 
-    def process(self, input_config):
-        root = FrklConfig()
-        self.frklize(input_config, root=root)
+    def new_config(self):
 
-        return root
+        # make sure the new value is a dict, with only allowed keys
+        if isinstance(self.current_input_config, (list, tuple)):
+            self.configs.extend(self.current_input_config)
+        else:
+            self.configs.append(self.current_input_config)
 
-    def frklize(self, new_value, root=[], values_so_far_parent={}):
 
-        values_so_far = copy.deepcopy(values_so_far_parent)
+    def process(self):
+
+        result = self.frklize(self.current_input_config, self.values_so_far)
+
+        return result
+
+
+    def frklize(self, config, current_vars):
+
 
         # mkaing sure the new value is a dict, with only allowed keys
-        if isinstance(new_value, string_types):
-            new_value = {
+        if isinstance(config, string_types):
+            config = {
                 self.default_leaf_key: {
-                    self.default_leaf_default_key: new_value
+                    self.default_leaf_default_key: config
                 }
             }
-        elif isinstance(new_value, (list, tuple)):
-            for item in new_value:
-                self.frklize(item, root, values_so_far)
-            return
-
-        if not isinstance(new_value, dict):
-            raise FrklConfigException(
-                "Not a supported type for value '{}': {}".format(
-                    new_value, type(new_value)))
-
-        # we check whether any of the known keys is available here, if not,
-        # we check whether there is a default key registered for the name (single) key
-        if not any(x in new_value.keys() for x in self.all_keys):
-            # if there are more than one keys in this, it's difficult to figure out what to do here, so for now let's just not allow that
-            # if len(new_value.keys()) != 1:
-            # raise FrklConfigException("If not using the full config format, leaf nodes are only allowed to have one key: {}".format(new_value))
-
-            # the string value of the key, this will be end up as the default_leaf_default_key of the default_leaf_key
-            key = list(new_value.keys())[0]
-
-            # we need to know where to put the value of this, if it's not registered beforehand we raise an exception
-            if not isinstance(new_value[key], dict) or not any(
-                    x in new_value[key].keys() for x in self.all_keys):
-                if not key in self.default_leaf_key_map.keys(
-                ) and not '*' in self.default_leaf_key_map.keys():
-                    raise FrklConfigException(
-                        "Can't find registered default key and value for shortcut value: {}".
-                        format(key))
-
-                # if the current value is not a dict, we'll put it there, using the registered default value for this string
-                if not key in self.default_leaf_key_map.keys():
-                    insert_default_leaf_key = self.default_leaf_key_map['*']
-                else:
-                    insert_default_leaf_key = self.default_leaf_key_map[key]
-                new_value[key] = {insert_default_leaf_key: new_value[key]}
-
-            # if the keys of the (now) dict contain any of the allowed keys, we use the dict directly
-            # TODO: check for 'unallowed' keys?
-            if any(x in new_value[key].keys() for x in self.all_keys):
-                temp_new_value = new_value[key]
-                dict_merge(
-                    temp_new_value, {
-                        self.default_leaf_key: {
-                            self.default_leaf_default_key: key
-                        }
-                    },
-                    copy_dct=False)
-                new_value = temp_new_value
-            # else we put the whole dict under the default_leaf_key
-            else:
-                temp_new_value = {
-                    self.default_leaf_key: {
-                        self.default_leaf_default_key: key
-                    }
-                }
-                dict_merge(
-                    temp_new_value,
-                    {self.default_leaf_default_key: new_value[key]},
-                    copy_dct=False)
-                new_value = temp_new_value
-
-        if self.stem_key in new_value.keys(
-        ) and self.default_leaf_key in new_value.keys():
-            raise FrklConfigException(
-                "Configuration can't have both stem key ({}) and default leaf key ({}) on the same level: {}".
-                format(self.stem_key, self.default_leaf_key, new_value))
-
-        stem = new_value.pop(self.stem_key, NO_STEM_INDICATOR)
-
-        temp = {}
-        dict_merge(temp, values_so_far, copy_dct=False)
-        dict_merge(temp, new_value, copy_dct=False)
-        new_value = temp
-
-        for key in new_value.keys():
-            if key not in self.all_keys:
-                raise FrklConfigException(
-                    "Key '{}' not allowed (in {})".format(key, new_value))
-
-            values_so_far.setdefault(key, []).append(new_value[key])
-
-        if stem == NO_STEM_INDICATOR:
-            if self.default_leaf_key in new_value:
-                root.append(values_so_far)
-            return
-        elif isinstance(stem,
-                        (list, tuple)) and not isinstance(stem, string_types):
-            self.frklize(stem, root, values_so_far)
+        elif isinstance(config, (list, tuple)):
+            for item in config:
+                for result in self.frklize(item, copy.deepcopy(current_vars)):
+                    yield result
         else:
-            raise FrklConfigException("Value of {} must be list (is: '{}')".
-                                      format(self.stem_key, type(stem)))
+
+            if not isinstance(config, dict):
+                raise FrklConfigException(
+                    "Not a supported type for value '{}': {}".format(
+                        config, type(config)))
+
+            new_value = {}
+
+            # check whether any of the known keys is available here, if not,
+            # we check whether ther is a default key registered for the name of the keys
+            if not any(x in config.keys() for x in self.all_keys):
+
+                if not len(config) == 1:
+                    raise FrklConfigException("This form of configuration is not implemented yet")
+                else:
+                    key = next(iter(config))
+                    value = config[key]
+
+                    insert_leaf_key = self.default_leaf_key
+                    insert_leaf_key_key = self.default_leaf_default_key
+                    new_value.setdefault(insert_leaf_key, {})[insert_leaf_key_key] = key
+
+                    if not isinstance(value, dict):
+                        raise FrklConfigException("Non-dict values for default leaf key items not supported (yet?): {}".format(value))
+                    if all(x in self.all_keys for x in value.keys()):
+                        dict_merge(new_value, value, copy_dct=False)
+                    elif all(x not in self.all_keys for x in value.keys()):
+                        if key in self.default_leaf_key_map.keys():
+                            migrate_key = self.default_leaf_key_map[key]
+                        elif '*' in self.default_leaf_key_map.keys():
+                            migrate_key = self.default_leaf_key_map['*']
+                        else:
+                            raise FrklConfigException("Can't find default_leaf_key to move values of key '{}".format(key))
+                        new_value[migrate_key] = value
+
+            else:
+                # check whether all keys are allowed
+                for key in config.keys():
+                    if not key in self.all_keys:
+                        raise FrklConfigException("Key '{}' not allowed, since it is an unknown keys amongst known keys in config: {}".format(key, config))
+
+                new_value = config
+
+
+            if self.stem_key in new_value.keys() and self.default_leaf_key in new_value.keys():
+                raise FrklConfigException(
+                    "Configuration can't have both stem key ({}) and default leaf key ({}) on the same level: {}".
+                    format(self.stem_key, self.default_leaf_key, new_value))
+
+            # at this point we have an 'expanded' dict
+
+            stem_branch = new_value.pop(self.stem_key, NO_STEM_INDICATOR)
+            # merge new values with current_vars
+            dict_merge(current_vars, new_value, copy_dct=False)
+            new_value = copy.deepcopy(current_vars)
+
+            if stem_branch == NO_STEM_INDICATOR:
+                if self.default_leaf_key in new_value.keys():
+                    yield new_value
+
+            else:
+                for item in self.frklize(stem_branch, copy.deepcopy(current_vars)):
+                    yield item
 
 
 class Jinja2TemplateProcessor(ConfigProcessor):
     def __init__(self, template_values={}):
         self.template_values = template_values
 
-    def process(self, input_config, context={}):
+    def process(self):
 
-        rtemplate = Environment(loader=BaseLoader()).from_string(input_config)
+        rtemplate = Environment(loader=BaseLoader()).from_string(self.current_input_config)
         config_string = rtemplate.render(self.template_values)
 
         return config_string
@@ -441,9 +458,9 @@ class RegexProcessor(ConfigProcessor):
 
         self.regexes = regexes
 
-    def process(self, input_config):
+    def process(self):
 
-        new_config = input_config
+        new_config = self.current_input_config
 
         for regex, replacement in self.regexes.items():
             new_config = re.sub(regex, replacement, new_config)
@@ -452,13 +469,23 @@ class RegexProcessor(ConfigProcessor):
 
 
 class LoadMoreConfigsProcessor(ConfigProcessor):
-    def process(self, input_config):
 
-        if isinstance(input_config, (list, tuple)):
-            if all(isinstance(item, string_types) for item in input_config):
-                return ProcessResult(None, input_config)
 
-        return input_config
+
+    def process(self):
+
+        if is_list_of_strings(self.current_input_config):
+            return None
+        else:
+            return self.current_input_config
+
+
+    def get_additional_configs(self):
+
+        if is_list_of_strings(self.current_input_config):
+            return self.current_input_config
+        else:
+            return None
 
 
 class UrlAbbrevProcessor(ConfigProcessor):
@@ -484,9 +511,9 @@ class UrlAbbrevProcessor(ConfigProcessor):
             else:
                 self.abbrevs = copy.deepcopy(abbrevs)
 
-    def process(self, input_config):
+    def process(self):
 
-        result = self.expand_config(input_config)
+        result = self.expand_config(self.current_input_config)
         return result
 
     def expand_config(self, config):
@@ -571,32 +598,52 @@ BOOTSTRAP_FRKL_FORMAT = {
 }
 BOOTSTRAP_PROCESSOR_CHAIN = [
     UrlAbbrevProcessor(), EnsureUrlProcessor(), EnsurePythonObjectProcessor(),
-    FrklDictProcessor(BOOTSTRAP_FRKL_FORMAT)
+    FrklProcessor(BOOTSTRAP_FRKL_FORMAT)
 ]
 
 # ----------------------------------------------------------------
+class MergeResultCallback(object):
 
+    def __init__(self):
+        self.result_list = []
+
+    def callback(self, process_result):
+        self.result_list.append(process_result)
+
+    def result(self):
+        return self.result_list
+
+class FrklFactoryCallback(object):
+
+    def __init__(self):
+        self.processors = []
+        self.bootstrap_chain = []
+
+    def callback(self, item):
+        self.processors.append(item)
+
+        ext_name = item.get('processor', {}).get('name', None)
+        if not ext_name:
+            raise FrklConfigException(
+                "Can't parse processor name using config: {}".format(item))
+        ext_init_params = item.get('init', {})
+        log.debug("Loading extension '{}' using init parameters: '{}".
+                  format(ext_name, ext_init_params))
+        ext = load_extension(ext_name, ext_init_params)
+        self.bootstrap_chain.append(ext.driver)
+
+    def result(self):
+
+        return Frkl([], self.bootstrap_chain)
 
 class Frkl(object):
+
     def factory(bootstrap_configs, frkl_configs=[]):
 
         bootstrap = Frkl(bootstrap_configs, BOOTSTRAP_PROCESSOR_CHAIN)
+        config_frkl = bootstrap.process(FrklFactoryCallback()).result()
 
-        prc_chain_config = bootstrap.process(result_key='flattened')
-        bootstrap_chain = []
-        for item in prc_chain_config:
-            ext_name = item.get('processor', {}).get('name', None)
-            if not ext_name:
-                raise FrklConfigException(
-                    "Can't parse processor name using config: {}".format(item))
-            ext_init_params = item.get('init', {})
-            log.debug("Loading extension '{}' using init parameters: '{}".
-                      format(ext_name, ext_init_params))
-            ext = load_extension(ext_name, ext_init_params)
-            bootstrap_chain.append(ext.driver)
-
-        config_frkl = Frkl(frkl_configs, processor_chain=bootstrap_chain)
-
+        config_frkl.set_configs(frkl_configs)
         return config_frkl
 
     factory = staticmethod(factory)
@@ -625,8 +672,6 @@ class Frkl(object):
     def set_configs(self, configs):
         """Sets the configuration(s) for this Frkl object.
 
-        This will prompt a re-computation of the context the next time it is requested.
-
         Args:
           configs (list): the configurations, will wrapped in a list if not a list or tuple already
         """
@@ -636,12 +681,8 @@ class Frkl(object):
 
         self.configs = list(configs)
 
-        self.context = None
-
     def append_configs(self, configs):
         """Appends the provided configuration(s) for this Frkl object.
-
-        This will prompt a re-computation of the context the next time it is requested.
 
         Args:
           configs (list): the configurations, will wrapped in a list if not a list or tuple already
@@ -654,24 +695,17 @@ class Frkl(object):
         for c in configs:
             self.configs.append(c)
 
-        self.context = None
 
-    def process(self, result_key='unprocessed'):
+    def process(self, callback=None):
 
-        if self.context:
-            if result_key == '*':
-                return self.context
-            else:
-                return self.context.get(result_key, None)
+        if not callback:
+            callback = MergeResultCallback()
 
-        self.context = self.process_configs(self.configs, {})
+        self.process_configs(self.configs, callback)
 
-        if result_key == '*':
-            return self.context
-        else:
-            return self.context.get(result_key, None)
+        return callback
 
-    def process_configs(self, configs, context):
+    def process_configs(self, configs, callback):
         """Kicks off the processing of the configuration urls.
 
       Args:
@@ -684,52 +718,40 @@ class Frkl(object):
         idx = 0
 
         configs_copy = copy.deepcopy(configs)
-        new_config = configs_copy.pop(0)
 
-        while True:
+        while configs_copy:
 
-            log.debug("Processing config: {}".format(new_config))
-
-            if len(configs_copy) > 20:
+            if len(configs_copy) > 1024:
                 raise FrklConfigException("More than 1024 configs, this looks like a loop, exiting.")
 
-            last_processing_result = None
-            for current_processor in self.processor_chain:
-                result = current_processor.process_config(
-                    new_config, copy.deepcopy(context))
+            config = configs_copy.pop(0)
 
-                additional_configs = copy.deepcopy(result.more_configs)
-                additional_configs.extend(configs_copy)
-                configs_copy = additional_configs
-                last_processing_result = result.processed_config
-
-                context.setdefault("config_{}".format(idx), {}).setdefault(
-                    "history", []).append(last_processing_result)
-                if last_processing_result == None:
-                    break;
-
-                new_config = last_processing_result
-
-            if last_processing_result != None:
-                context.setdefault('unprocessed', []).append(last_processing_result)
-                if isinstance(last_processing_result, FrklConfig):
-                    last_processing_result = last_processing_result.flatten()
-                    context.setdefault('frkl', []).append(last_processing_result)
-
-            idx = idx + 1
-            try:
-                new_config = configs_copy.pop(0)
-            except IndexError:
-                break
+            self.process_single_config(config, self.processor_chain, callback, configs_copy)
 
 
-        context.setdefault('unprocessed', [])
-        context.setdefault('frkl', [])
-        context['flattened'] = [
-            item for sublist in context['frkl'] for item in sublist
-        ]
 
-        return context
+    def process_single_config(self, config, processor_chain, callback, configs_copy):
+
+        if not config:
+            return
+
+        if not processor_chain:
+            callback.callback(config)
+            return
+
+        current_processor = processor_chain[0]
+        current_processor.set_current_config(copy.deepcopy(config))
+        additional_configs = current_processor.get_additional_configs()
+        if additional_configs:
+            configs_copy[0:0] = additional_configs
+
+        last_processing_result = current_processor.process_config()
+        if isinstance(last_processing_result, types.GeneratorType):
+            for item in last_processing_result:
+                self.process_single_config(item, processor_chain[1:], callback, configs_copy)
+        else:
+            self.process_single_config(last_processing_result, processor_chain[1:], callback, configs_copy)
+
 
     def frkl(self):
         """Returns a flattened list of a frklized config chain.
@@ -738,8 +760,8 @@ class Frkl(object):
         list: a list of expanded config items
         """
 
-        frkl_list = self.process('frkl')
-        return [item for sublist in frkl_list for item in sublist]
+        result = self.process()
+        return result.result()
 
 
     def get_config(config):

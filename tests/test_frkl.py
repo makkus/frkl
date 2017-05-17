@@ -136,7 +136,7 @@ TEST_FRKLIZE_1_RESULT = [{
     }
 }]
 
-TEST_FRKLIZE_1_RESULT_DOUBLE = [TEST_FRKLIZE_1_RESULT, TEST_FRKLIZE_1_RESULT]
+TEST_FRKLIZE_1_RESULT_DOUBLE = TEST_FRKLIZE_1_RESULT + TEST_FRKLIZE_1_RESULT
 
 TEST_JINJA_DICT = {"config": {"a": 1, "b": 2, "c": 3, "d": 4}}
 TEST_JINJA_URLS = [
@@ -170,29 +170,21 @@ ENSURE_URL_CHAIN = [frkl.EnsureUrlProcessor()]
 ENSURE_PYTHON_CHAIN = [
     frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor()
 ]
-FRKLIZE_CHAIN = [
-    frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(),
-    frkl.LoadMoreConfigsProcessor(), frkl.FrklDictProcessor({
-        "stem_key":
-        "childs",
-        "default_leaf_key":
-        "task",
-        "default_leaf_default_key":
-        "task_name",
-        "other_valid_keys": ["vars"],
-        "default_leaf_key_map":
-        "vars"
-    })
-]
-ABBREV_FRKLIZE_CHAIN = [
-    frkl.UrlAbbrevProcessor(), frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.LoadMoreConfigsProcessor(),
-    frkl.FrklDictProcessor({
+
+FRKL_INIT_PARAMS = {
         "stem_key": "childs",
         "default_leaf_key": "task",
         "default_leaf_default_key": "task_name",
         "other_valid_keys": ["vars"],
         "default_leaf_key_map": "vars"
-    })
+    }
+FRKLIZE_CHAIN = [
+    frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(),
+    frkl.LoadMoreConfigsProcessor(), frkl.FrklProcessor(FRKL_INIT_PARAMS)
+]
+ABBREV_FRKLIZE_CHAIN = [
+    frkl.UrlAbbrevProcessor(), frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.LoadMoreConfigsProcessor(),
+    frkl.FrklProcessor(FRKL_INIT_PARAMS)
 ]
 
 PROCESSOR_TESTS = [
@@ -212,11 +204,11 @@ PROCESSOR_TESTS = [
      ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"]),
     (ABBREV_CHAIN, "bb:makkus/freckles/examples/quickstart.yml", "unprocessed", ["https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"]),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"),
-         "frkl", [TEST_FRKLIZE_1_RESULT]),
+         "frkl", TEST_FRKLIZE_1_RESULT),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"),
-     "frkl", [TEST_FRKLIZE_1_RESULT]),
+     "frkl", TEST_FRKLIZE_1_RESULT),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_3.yml"),
-     "frkl", [TEST_FRKLIZE_1_RESULT]),
+     "frkl", TEST_FRKLIZE_1_RESULT),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_4.yml"),
      "frkl", TEST_FRKLIZE_1_RESULT_DOUBLE),
     (ABBREV_FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_5.yml"),
@@ -250,11 +242,12 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
 def test_processor(processor, input_config, context_key, expected):
 
     frkl_obj = frkl.Frkl(input_config, processor_chain=processor)
-    result = frkl_obj.process(context_key)
+    result_callback = frkl_obj.process()
+    result = result_callback.result()
 
-    # pprint.pprint(result)
-    # print("XXX")
-    # pprint.pprint(expected)
+    pprint.pprint(result)
+    print("XXX")
+    pprint.pprint(expected)
 
     assert result == expected
 
@@ -265,3 +258,44 @@ def test_ensure_fail_url_processor(input_url):
     prc = frkl.EnsureUrlProcessor()
     with pytest.raises(frkl.FrklConfigException):
         prc.process(input_url)
+
+@pytest.mark.parametrize("config, expected", [
+    ({"a": 1}, {"vars": {'a': 1}})
+])
+def test_frkl_valid_config(config, expected):
+
+    frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    frkl_obj.set_current_config(config)
+    frkl_obj.process()
+
+@pytest.mark.parametrize("config", [
+    ({"a": 1, "vars": 2}),
+    ({"tasks": 1, "childs": 1})
+])
+def test_frkl_invalid_config(config):
+
+    frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    frkl_obj.set_current_config(config)
+    with pytest.raises(frkl.FrklConfigException):
+        frkl_obj.process()
+
+
+def test_frkl_yield():
+
+    frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    config_1 = {"vars": {"aa": 11}, "childs": [{"task": {"type": "test11"}, "vars": {"bb": 22}}]}
+    config_2 = {"vars": {"a": 1}, "childs": [{"task": {"type": "test"}, "vars": {"b": 2}}, {"task": {"type": "another"}, "vars": {"c": 3}}, {"vars": {"d": 4}, "task": {"type": "3rd"}}]}
+    config_0 = {"vars": {"eee": 444}}
+    config_4 = {"vars": {"gg": 66}, "childs": [{"task": {"type": "test_NEW"}, "vars": {"bb": 22}}]}
+    frkl_obj.set_current_config(config_1)
+    frkl_obj.set_current_config(config_2)
+    frkl_obj.set_current_config(config_0)
+    frkl_obj.set_current_config(config_4)
+
+    result = frkl_obj.process_config()
+
+    # print(result)
+    for i in result:
+        print("---------------")
+        pprint.pprint(i)
+        print("---------------")

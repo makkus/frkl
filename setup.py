@@ -42,7 +42,7 @@ setup(
             'abbrev=frkl:UrlAbbrevProcessor',
             'url=frkl:EnsureUrlProcessor',
             'python_object=frkl:EnsurePythonObjectProcessor',
-            'expand=frkl:FrklDictProcessor',
+            'expand=frkl:FrklProcessor',
             'template=frkl:Jinja2TemplateProcessor',
             'regex=frkl:RegexProcessor',
             'load_more_configs=frkl:LoadMoreConfigsProcessor'

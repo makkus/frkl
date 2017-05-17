@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import click
-from six import string_types
-import sys
 import logging
-from .frkl import Frkl
 import pprint
+import sys
+
+import click
 import yaml
+from six import string_types
 
 from . import __version__ as VERSION
+from .frkl import Frkl
 
 log = logging.getLogger("frkl")
 
@@ -51,19 +52,10 @@ def cli(ctx, frkl, version):
 def print_config(ctx, config):
 
     frkl = ctx.obj['frkl']
-
     frkl.set_configs(config)
-
     result = frkl.frkl()
-
     print(yaml.dump(result, default_flow_style=False))
-
-
-
-
 
 
 if __name__ == "__main__":
     cli()
-
-
