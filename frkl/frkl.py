@@ -18,10 +18,10 @@ import types
 
 import requests
 import six
+import stevedore
 import yaml
 from jinja2 import BaseLoader, Environment, PackageLoader
 from six import string_types
-from stevedore import driver
 
 try:
     set
@@ -136,7 +136,7 @@ def load_extension(name, init_params=None):
 
     log.debug("Loading extension...")
 
-    mgr = driver.DriverManager(
+    mgr = stevedore.driver.DriverManager(
         namespace='frkl.frk',
         name=name,
         invoke_on_load=True,
