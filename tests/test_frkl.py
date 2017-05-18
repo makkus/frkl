@@ -8,6 +8,7 @@ Tests for `frkl` module.
 """
 
 import copy
+import glob
 import os
 import pprint
 import sys
@@ -150,8 +151,8 @@ TEST_ENSURE_FAIL_URLS = [("/tmp_does_not_exist/234234234"), (
     "https://raw222.githubusercontent.com/xxxxxxx8888/asdf.yml")]
 
 TEST_PROCESSOR_CHAIN_1 = [
-    frkl.RegexProcessor(TEST_REGEXES),
-    frkl.UrlAbbrevProcessor(TEST_CUSTOM_ABBREVS)
+    frkl.RegexProcessor({"regexes": TEST_REGEXES}),
+    frkl.UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})
 ]
 TEST_CHAIN_1_URLS = [(["gh:makkus/freckles/examples/quickstart.yml"], [
     "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"
@@ -161,12 +162,12 @@ TEST_CHAIN_1_URLS = [(["gh:makkus/freckles/examples/quickstart.yml"], [
     "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"
 ])]
 
-REGEX_CHAIN = [frkl.RegexProcessor(TEST_REGEXES)]
+REGEX_CHAIN = [frkl.RegexProcessor({"regexes": TEST_REGEXES})]
 JINJA_CHAIN = [
     frkl.EnsureUrlProcessor(), frkl.Jinja2TemplateProcessor(
-        template_values=TEST_JINJA_DICT)
+        {"template_values": TEST_JINJA_DICT})
 ]
-ABBREV_CHAIN = [frkl.UrlAbbrevProcessor(abbrevs=TEST_CUSTOM_ABBREVS)]
+ABBREV_CHAIN = [frkl.UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})]
 ENSURE_URL_CHAIN = [frkl.EnsureUrlProcessor()]
 ENSURE_PYTHON_CHAIN = [
     frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor()
@@ -176,7 +177,6 @@ FRKL_INIT_PARAMS = {
         STEM_KEY_NAME: "childs",
         DEFAULT_LEAF_KEY_NAME: "task",
         DEFAULT_LEAF_DEFAULT_KEY_NAME: "task_name",
-        OTHER_VALID_KEYS_NAME: ["vars"],
         DEFAULT_LEAF_KEY_MAP_NAME: "vars"
     }
 FRKLIZE_CHAIN = [
@@ -290,3 +290,32 @@ def test_frkl_invalid_config(config):
     with pytest.raises(frkl.FrklConfigException):
         for i in frkl_obj.process():
             print(i)
+
+
+@pytest.mark.parametrize("test_name", [
+    "simple_test",
+    "simple_test2",
+    "load_single_config_test",
+    "load_multiple_configs_test",
+    "download_multiple_configs_test"
+])
+def test_files(test_name):
+
+    folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
+    chain_file = os.path.join(folder, "chain.yml")
+    input_files = []
+    for child in os.listdir(folder):
+        if child.startswith("input_"):
+            input_files.append(os.path.join(folder, child))
+    input_files.sort()
+    result_file = os.path.join(folder, "result.yml")
+
+    with open(result_file) as f:
+        content = f.read()
+
+    expected_obj = yaml.load(content)
+
+    frkl_obj = frkl.Frkl.factory(chain_file, input_files)
+    result_obj = frkl_obj.process()
+
+    assert expected_obj == result_obj

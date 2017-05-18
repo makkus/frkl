@@ -9,12 +9,10 @@
 - processor:
     type: frklize
   init:
-    stem_key: childs
-    default_leaf_key: task
-    default_leaf_default_key: task_name
-    other_valid_keys: 
-       - vars
-    default_leaf_key_map: vars
+    child_marker: childs
+    default_leaf: task
+    default_leaf_key: task_name
+    key_move_map: vars
 - processor:
     type: merge
 - processor:

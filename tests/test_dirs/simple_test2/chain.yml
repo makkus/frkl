@@ -1,11 +1,9 @@
 - expand_url
 - read
 - deserialize
-- load_additional_configs
 - frklize:
     child_marker: childs
     default_leaf: task
     default_leaf_key: task_name
-    key_move_map: vars
-- merge
-- to_yaml
+    key_move_map:
+      '*': vars

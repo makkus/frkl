@@ -1,0 +1,31 @@
+- vars:
+    "a": 1
+    "b": 2
+    "aa": 11
+    "bb": 22
+  task:
+    "task_name": "task1"
+
+- vars:
+    "a": 1
+    "b": 2
+    "cc": 33
+    "dd": 44
+  task:
+    "task_name": "task2"
+
+- vars:
+    "a": 1
+    "b": 2
+    "aa": 11
+    "bb": 22
+  task:
+    "task_name": "task1"
+
+- vars:
+    "a": 1
+    "b": 2
+    "cc": 33
+    "dd": 44
+  task:
+    "task_name": "task2"

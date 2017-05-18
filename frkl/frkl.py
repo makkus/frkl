@@ -39,11 +39,11 @@ __metaclass__ = type
 
 log = logging.getLogger("frkl")
 
-STEM_KEY_NAME = "stem_key"
-DEFAULT_LEAF_KEY_NAME = "default_leaf_key"
-DEFAULT_LEAF_DEFAULT_KEY_NAME = "default_leaf_default_key"
-OTHER_VALID_KEYS_NAME = "other_valid_keys"
-DEFAULT_LEAF_KEY_MAP_NAME = "default_leaf_key_map"
+STEM_KEY_NAME = "child_marker"
+DEFAULT_LEAF_KEY_NAME = "default_leaf"
+DEFAULT_LEAF_DEFAULT_KEY_NAME = "default_leaf_key"
+OTHER_VALID_KEYS_NAME = "other_keys"
+DEFAULT_LEAF_KEY_MAP_NAME = "key_move_map"
 
 FRKL_DEFAULT_PARAMS = {
         STEM_KEY_NAME: "childs",
@@ -472,18 +472,17 @@ class FrklProcessor(ConfigProcessor):
         self.default_leaf_key = self.init_params[DEFAULT_LEAF_KEY_NAME]
         self.default_leaf_default_key = self.init_params[
             DEFAULT_LEAF_DEFAULT_KEY_NAME]
-        self.other_valid_keys = self.init_params[OTHER_VALID_KEYS_NAME]
+        self.other_valid_keys = self.init_params.get(OTHER_VALID_KEYS_NAME, [])
         self.default_leaf_key_map = self.init_params[DEFAULT_LEAF_KEY_MAP_NAME]
         if isinstance(self.default_leaf_key_map, string_types):
             self.default_leaf_key_map = {"*": self.default_leaf_key_map}
-        elif isinstance(self.default_leaf_key_map, dict):
-            self.default_leaf_key_map = self.default_leaf_key_map
-        else:
-            return "Type '{}' not supported for default leaf key map.".format(
+        elif not isinstance(self.default_leaf_key_map, dict):
+            return "Type '{}' not supported for move_key_map.".format(
                 type(self.default_leaf_key_map))
 
         self.all_keys = set([self.stem_key, self.default_leaf_key])
         self.all_keys.update(self.other_valid_keys)
+        self.all_keys.update(self.default_leaf_key_map.values())
 
         return True
 
@@ -589,17 +588,24 @@ class FrklProcessor(ConfigProcessor):
                 for item in self.frklize(stem_branch, copy.deepcopy(current_vars)):
                     yield item
 
-
-
 class Jinja2TemplateProcessor(ConfigProcessor):
-    def __init__(self, template_values={}):
-        """Processor to replace all occurences of Jinja template strings with values (predefined,
-        or potentially dynamically processed in an earlier step).
+    """Processor to replace all occurences of Jinja template strings with values (predefined,
+    or potentially dynamically processed in an earlier step).
 
-        Args:
-          template_values (dict): a dictionary containing the values to replace template strings with
-        """
-        self.template_values = template_values
+    Args:
+        template_values (dict): a dictionary containing the values to replace template strings with
+    """
+
+    def __init__(self, init_params={}):
+
+        super(Jinja2TemplateProcessor, self).__init__(init_params)
+
+    def validate_init(self):
+
+        self.template_values = self.init_params["template_values"]
+        self.use_context = self.init_params.get("use_context", False)
+
+        return True
 
     def process_current_config(self):
 
@@ -610,14 +616,18 @@ class Jinja2TemplateProcessor(ConfigProcessor):
 
 
 class RegexProcessor(ConfigProcessor):
-    def __init__(self, regexes):
-        """Replaces all occurences of regex matches.
+    """Replaces all occurences of regex matches.
 
-        Args:
-          regexes (dict): a map of regexes and their replacements
-        """
+    Args:
+        regexes (dict): a map of regexes and their replacements
+    """
 
-        self.regexes = regexes
+    def __init__(self, init_params={}):
+        super(RegexProcessor, self).__init__(init_params)
+
+    def validate_init(self):
+        self.regexes = self.init_params["regexes"]
+        return True
 
     def process_current_config(self):
 
@@ -656,16 +666,19 @@ class LoadMoreConfigsProcessor(ConfigProcessor):
 
 
 class UrlAbbrevProcessor(ConfigProcessor):
+    """Replaces strings in an input configuration url with its expanded version.
 
-    def __init__(self, abbrevs={}, add_default_abbrevs=True):
-        """Replaces strings in an input configuration url with its expanded version.
+    The default constructor without any arguments will create a processor only using the default, inbuilt abbreviations
 
-        The default constructor without any arguments will create a processor only using the default, inbuilt abbreviations
+    Kwargs:
+      abbrevs (dict): custom abbreviations to use
+      add_default_abbrevs (bool): whether to add the default abbreviations
+    """
 
-        Kwargs:
-          abbrevs (dict): custom abbreviations to use
-          add_default_abbrevs (bool): whether to add the default abbreviations
-        """
+    def validate_init(self):
+
+        abbrevs = self.init_params.get("abbrevs", False)
+        add_default_abbrevs = self.init_params.get("add_default_abbrevs", True)
 
         if not abbrevs:
             if add_default_abbrevs:
@@ -678,6 +691,8 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 dict_merge(self.abbrevs, abbrevs, copy_dct=False)
             else:
                 self.abbrevs = copy.deepcopy(abbrevs)
+
+        return True
 
     def process_current_config(self):
 
