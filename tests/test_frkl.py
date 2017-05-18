@@ -253,8 +253,7 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
 def test_processor(processor, input_config, context_key, expected):
 
     frkl_obj = frkl.Frkl(input_config, processor_chain=processor)
-    result_callback = frkl_obj.process()
-    result = result_callback.result()
+    result = frkl_obj.process()
 
     pprint.pprint(result)
     print("XXX")
@@ -269,7 +268,7 @@ def test_ensure_fail_url_processor(input_url):
     prc = frkl.EnsureUrlProcessor()
     prc.set_current_config(input_url)
     with pytest.raises(frkl.FrklConfigException):
-        prc.process()
+        prc.process_current_config()
 
 @pytest.mark.parametrize("config, expected", [
     ({"a": 1}, {"vars": {'a': 1}})
@@ -278,7 +277,7 @@ def test_frkl_valid_config(config, expected):
 
     frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config)
-    frkl_obj.process()
+    frkl_obj.process_current_config()
 
 @pytest.mark.parametrize("config", [
     ({"a": 1, "vars": 2}),
@@ -289,7 +288,7 @@ def test_frkl_invalid_config(config):
     frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config)
     with pytest.raises(frkl.FrklConfigException):
-        for i in frkl_obj.process():
+        for i in frkl_obj.process_current_config():
             print(i)
 
 
@@ -305,7 +304,7 @@ def test_frkl_yield():
     frkl_obj.set_current_config(config_0)
     frkl_obj.set_current_config(config_4)
 
-    result = frkl_obj.process_config()
+    result = frkl_obj.process_current_config()
 
     # print(result)
     for i in result:

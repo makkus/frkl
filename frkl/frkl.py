@@ -108,9 +108,6 @@ def dict_merge(dct, merge_dct, copy_dct=True):
     return dct
 
 
-CONFIG_PROCESSOR_VALUE_TYPES = ["STRING", "URL", "JSON", "YAML", "DICT"]
-
-
 # extensions
 # ------------------------------------------------------------------------
 def load_extension(name, init_params=None):
@@ -150,7 +147,6 @@ def load_extension(name, init_params=None):
 # ------------------------------------------------------------------------
 # Frkl Exception(s)
 
-
 class FrklConfigException(Exception):
     def __init__(self, message, errors=[]):
         """Exception that is thrown when processing configuration urls/content.
@@ -167,22 +163,79 @@ class FrklConfigException(Exception):
             self.errors = errors
 
 
+# ----------------------------------------------------------------
+# callbacks
+@six.add_metaclass(abc.ABCMeta)
+class FrklCallback(object):
+    """A class to slurp up configurations from the last element of a processor chain.
+
+    Since those processers might return Generators, it's handy to deal with the results of a config processing
+    manually, callbacks seemed like a good way to do it.
+    """
+
+    @abc.abstractmethod
+    def callback(self, item):
+        """Adds a new item to the callback class.
+
+        Args:
+          item (object): the newly processed config
+        """
+        pass
+
+    @abc.abstractmethod
+    def result(self):
+        """Returns a meaningful representation of all added configs so far.
+
+        Ideally this is a string representation of the (current) state of the callback, since it might
+        be used by 3rd party tools for debugging purposes, or as a method to show state in the absence
+        of knowledge of the type of FrklCallback that is used.
+
+        Returns:
+          object: the current state of the callback
+        """
+        pass
+
+
+class MergeResultCallback(FrklCallback):
+    """Simple callback, just appends all configs to an internal list."""
+
+    def __init__(self):
+        self.result_list = []
+
+    def callback(self, process_result):
+        self.result_list.append(process_result)
+
+    def result(self):
+        return self.result_list
+
+class FrklFactoryCallback(FrklCallback):
+    """Helper callback method, creates a new Frkl object by processing a list of processor init dicts.
+    """
+
+    def __init__(self):
+        self.processors = []
+        self.bootstrap_chain = []
+
+    def callback(self, item):
+        self.processors.append(item)
+
+        ext_name = item.get('processor', {}).get('name', None)
+        if not ext_name:
+            raise FrklConfigException(
+                "Can't parse processor name using config: {}".format(item))
+        ext_init_params = item.get('init', {})
+        log.debug("Loading extension '{}' using init parameters: '{}".
+                  format(ext_name, ext_init_params))
+        ext = load_extension(ext_name, ext_init_params)
+        self.bootstrap_chain.append(ext.driver)
+
+    def result(self):
+
+        return Frkl([], self.bootstrap_chain)
+
+
 # ---------------------------------------------------------------------------
-# configuration wrapper
-class FrklConfig(list):
-
-    def flatten(self):
-        result = []
-        for conf in self:
-            result_dict = {}
-            for var, value_dicts in conf.items():
-                result_dict[var] = {}
-                for value_dict in value_dicts:
-                    dict_merge(result_dict[var], value_dict, copy_dct=False)
-            result.append(result_dict)
-
-        return result
-
+# processors
 
 @six.add_metaclass(abc.ABCMeta)
 class ConfigProcessor(object):
@@ -204,13 +257,18 @@ class ConfigProcessor(object):
             raise FrklConfigException(msg)
 
     def validate_init(self):
-        """Optional method that can be overwritten to validate input arguments for this processor.
+        """Optional method that can be overwritten to process and validate input arguments for this processor.
+
+        Returns:
+          bool: whether validation succeeded or not
         """
 
         return True
 
     def set_current_config(self, input_config):
         """Sets the current configuration.
+
+        Calls the 'new_config' method after assigning the new input configuration to the 'self.current_input_config' variable.
 
         Args:
           input_config (object): current configuration to be processed
@@ -220,25 +278,18 @@ class ConfigProcessor(object):
         self.new_config()
 
     def new_config(self):
-        """Can be overwritten to initially compute a new config after it is first set."""
+        """Can be overwritten to initially compute a new config after it is first set.
+
+        The newly (last) added input configuration is stored in the 'self.current_input_config' variable.
+        """
 
         pass
 
-    def process_config(self):
-        """Kick of processing using the sub-classes 'process' method.
-
-      Args:
-        input_config (object): the configuration to process
-
-      Returns:
-        object: the processed configuration, if the return value is a tuple of size 2, the first element is the processed configuration, and the 2nd one is the (changed) list of configs
-      """
-
-        result = self.process()
-        return result
 
     def get_additional_configs(self):
         """Returns additional configs if applicable.
+
+        This is called before the 'process' method.
 
         Returns:
           list: other configs to be processed next
@@ -246,7 +297,8 @@ class ConfigProcessor(object):
 
         return None
 
-    def process(self):
+    @abc.abstractmethod
+    def process_current_config(self):
         """Processes the config url or content.
 
         Args:
@@ -256,11 +308,10 @@ class ConfigProcessor(object):
           object: processed config url or content
         """
 
-        return self.current_input_config
-
+        pass
 
 class EnsureUrlProcessor(ConfigProcessor):
-    """Makes sure the provided string is a url"""
+    """Makes sure the provided string is a url, then downloads the target and reads the content."""
 
     def get_config(self, config_file_url):
         """Retrieves the config (if necessary), and returns its content.
@@ -297,23 +348,28 @@ class EnsureUrlProcessor(ConfigProcessor):
 
         return content
 
-    def process(self):
+    def process_current_config(self):
 
         result = self.get_config(self.current_input_config)
         return result
 
 
 class EnsurePythonObjectProcessor(ConfigProcessor):
-    """Makes sure the provided string is either valid yaml or json, and converts it into a str.
+    """Makes sure the provided string is either valid yaml (or json -- not implemented yet), and converts it into a python object.
   """
 
-    def process(self):
+    def process_current_config(self):
 
         config_obj = yaml.load(self.current_input_config)
         return config_obj
 
 
 class FrklProcessor(ConfigProcessor):
+    """A processor to 'expand' python dictionaries using a pre-defined schema.
+
+    This is a bit more complicated to explain than I'd like it to be. For that reason, there is an extra
+    page in the docs: link (XXX)
+    """
 
     def __init__(self, init_params={}):
         self.init_params = init_params
@@ -358,7 +414,7 @@ class FrklProcessor(ConfigProcessor):
             self.configs.append(self.current_input_config)
 
 
-    def process(self):
+    def process_current_config(self):
 
         result = self.frklize(self.current_input_config, self.values_so_far)
 
@@ -366,7 +422,13 @@ class FrklProcessor(ConfigProcessor):
 
 
     def frklize(self, config, current_vars):
+        """Recursivly called function which generates (expands) and yields dictionaries matching
+        certain criteria (containing leaf_node keys, for example).
 
+        Args:
+          config (object): the input config
+          current_vars (dict): current state of the (overlayed) var cache
+        """
 
         # mkaing sure the new value is a dict, with only allowed keys
         if isinstance(config, string_types):
@@ -448,9 +510,15 @@ class FrklProcessor(ConfigProcessor):
 
 class Jinja2TemplateProcessor(ConfigProcessor):
     def __init__(self, template_values={}):
+        """Processor to replace all occurences of Jinja template strings with values (predefined,
+        or potentially dynamically processed in an earlier step).
+
+        Args:
+          template_values (dict): a dictionary containing the values to replace template strings with
+        """
         self.template_values = template_values
 
-    def process(self):
+    def process_current_config(self):
 
         rtemplate = Environment(loader=BaseLoader()).from_string(self.current_input_config)
         config_string = rtemplate.render(self.template_values)
@@ -468,7 +536,7 @@ class RegexProcessor(ConfigProcessor):
 
         self.regexes = regexes
 
-    def process(self):
+    def process_current_config(self):
 
         new_config = self.current_input_config
 
@@ -479,10 +547,16 @@ class RegexProcessor(ConfigProcessor):
 
 
 class LoadMoreConfigsProcessor(ConfigProcessor):
+    """Processort to load additional configs from configs.
 
+    If an incoming configuration is a list of strings, it'll interprete it as list of
+    urls and adds it in front of the list of 'yet-to-process' configs of this processing run.
 
+    Use this with caution, since if this gets a list of string that is not a list of urls, it
+    will still treat it like one and your run will fail.
+    """
 
-    def process(self):
+    def process_current_config(self):
 
         if is_list_of_strings(self.current_input_config):
             return None
@@ -499,6 +573,7 @@ class LoadMoreConfigsProcessor(ConfigProcessor):
 
 
 class UrlAbbrevProcessor(ConfigProcessor):
+
     def __init__(self, abbrevs={}, add_default_abbrevs=True):
         """Replaces strings in an input configuration url with its expanded version.
 
@@ -521,7 +596,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
             else:
                 self.abbrevs = copy.deepcopy(abbrevs)
 
-    def process(self):
+    def process_current_config(self):
 
         result = self.expand_config(self.current_input_config)
         return result
@@ -595,10 +670,12 @@ class UrlAbbrevProcessor(ConfigProcessor):
             return config
 
 
+# simple chain to convert a string (which might be an abbreviated url or path or yaml or json string) into a python object
 DEFAULT_PROCESSOR_CHAIN = [
     UrlAbbrevProcessor(), EnsureUrlProcessor(), EnsurePythonObjectProcessor()
 ]
 
+# format of processor init dicts
 BOOTSTRAP_FRKL_FORMAT = {
     "stem_key": "processors",
     "default_leaf_key": "processor",
@@ -606,52 +683,31 @@ BOOTSTRAP_FRKL_FORMAT = {
     "other_valid_keys": ["init"],
     "default_leaf_key_map": "init"
 }
+# chain to bootstrap processor_chain in order to generate a frkl object
 BOOTSTRAP_PROCESSOR_CHAIN = [
     UrlAbbrevProcessor(), EnsureUrlProcessor(), EnsurePythonObjectProcessor(),
     FrklProcessor(BOOTSTRAP_FRKL_FORMAT)
 ]
 
-# ----------------------------------------------------------------
-class MergeResultCallback(object):
-
-    def __init__(self):
-        self.result_list = []
-
-    def callback(self, process_result):
-        self.result_list.append(process_result)
-
-    def result(self):
-        return self.result_list
-
-class FrklFactoryCallback(object):
-
-    def __init__(self):
-        self.processors = []
-        self.bootstrap_chain = []
-
-    def callback(self, item):
-        self.processors.append(item)
-
-        ext_name = item.get('processor', {}).get('name', None)
-        if not ext_name:
-            raise FrklConfigException(
-                "Can't parse processor name using config: {}".format(item))
-        ext_init_params = item.get('init', {})
-        log.debug("Loading extension '{}' using init parameters: '{}".
-                  format(ext_name, ext_init_params))
-        ext = load_extension(ext_name, ext_init_params)
-        self.bootstrap_chain.append(ext.driver)
-
-    def result(self):
-
-        return Frkl([], self.bootstrap_chain)
-
 class Frkl(object):
 
     def factory(bootstrap_configs, frkl_configs=[]):
+        """Factory method to easily create a Frkl object using a list of configurations to describe
+        the format of the configs to use later on, as well as (optionally) a list of such configs.
+
+        Args:
+          bootstrap_configs (list): the configuration to describe the format of the configurations the new Frkl object uses
+          frkl_configs (list): (optional) configurations to init the Frkl object with. this can also be done later using the 'set_configs' method
+
+        Returns:
+          Frkl: a new Frkl object
+        """
+
+        if isinstance(bootstrap_configs, string_types):
+            bootstrap_configs = [bootstrap_configs]
 
         bootstrap = Frkl(bootstrap_configs, BOOTSTRAP_PROCESSOR_CHAIN)
-        config_frkl = bootstrap.process(FrklFactoryCallback()).result()
+        config_frkl = bootstrap.process(FrklFactoryCallback())
 
         config_frkl.set_configs(frkl_configs)
         return config_frkl
@@ -707,27 +763,21 @@ class Frkl(object):
 
 
     def process(self, callback=None):
+        """Kicks off the processing of the configuration urls.
+
+      Args:
+        callback (FrklCallback): callback to use for this processing run, defaults to 'MergeResultCallback'
+
+      Returns:
+        object: the value of the result() method of the callback
+      """
 
         if not callback:
             callback = MergeResultCallback()
 
-        self.process_configs(self.configs, callback)
-
-        return callback
-
-    def process_configs(self, configs, callback):
-        """Kicks off the processing of the configuration urls.
-
-      Args:
-        configs (list): the configs to process
-
-      Returns:
-        list: a list of configuration items, corresponding to the input configuration urls
-      """
-
         idx = 0
 
-        configs_copy = copy.deepcopy(configs)
+        configs_copy = copy.deepcopy(self.configs)
 
         while configs_copy:
 
@@ -739,8 +789,17 @@ class Frkl(object):
             self.process_single_config(config, self.processor_chain, callback, configs_copy)
 
 
+        return callback.result()
 
     def process_single_config(self, config, processor_chain, callback, configs_copy):
+        """Helper method to be able to recursively call the next processor in the chain.
+
+        Args:
+          config (object): the current config object
+          processor_chain (list): the list of processor items to use (reduces by one with every recursive run)
+          callback (FrklCallback): the callback that receives any potential results
+          configs_copy (list): list of configs that still need processing, this method might prepend newly processed configs to this
+        """
 
         if not config:
             return
@@ -755,54 +814,9 @@ class Frkl(object):
         if additional_configs:
             configs_copy[0:0] = additional_configs
 
-        last_processing_result = current_processor.process_config()
+        last_processing_result = current_processor.process_current_config()
         if isinstance(last_processing_result, types.GeneratorType):
             for item in last_processing_result:
                 self.process_single_config(item, processor_chain[1:], callback, configs_copy)
         else:
             self.process_single_config(last_processing_result, processor_chain[1:], callback, configs_copy)
-
-
-    def frkl(self):
-        """Returns a flattened list of a frklized config chain.
-
-        Returns:
-        list: a list of expanded config items
-        """
-
-        result = self.process()
-        return result.result()
-
-
-    def get_config(config):
-        """Retrieves the configuration, including pre-processing.
-
-        Args:
-          config (str): the configuration url/json/etc...
-
-        Returns:
-          dict: the pre-processed configuration dict
-        """
-
-        if isinstance(config, dict):
-            log.debug("Not processing config, already dict: {}".format(config))
-            return config
-
-        # expanding configuration url if applicable
-
-        if os.path.exists(config):
-            log.debug("Opening as file: {}".format(config))
-            with open(config_file_url) as f:
-                content = f.read()
-
-    def frklize_config(self, root, configs):
-        """Read all configs in order, generate a composite.
-
-        Args:
-          root (list): root list to add new configurations onto
-          configs (list): configurations to add
-        """
-
-        for c in configs:
-
-            self.get_config(c)

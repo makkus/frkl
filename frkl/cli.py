@@ -53,7 +53,7 @@ def print_config(ctx, config):
 
     frkl = ctx.obj['frkl']
     frkl.set_configs(config)
-    result = frkl.frkl()
+    result = frkl.process()
     print(yaml.dump(result, default_flow_style=False))
 
 
