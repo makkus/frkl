@@ -51,6 +51,7 @@ PLACEHOLDER = -9876
 NO_STEM_INDICATOR = "-99999"
 RECURSIVE_LOAD_INDICATOR = "-67323"
 
+# abbreviations used by the UrlAbbrevProcessor class
 DEFAULT_ABBREVIATIONS = {
     'gh':
     ["https://raw.githubusercontent.com", PLACEHOLDER, PLACEHOLDER, "master"],
@@ -62,6 +63,14 @@ DEFAULT_ABBREVIATIONS = {
 
 
 def is_list_of_strings(input_obj):
+    """Helper method to determine whether an object is a list or tuple of only strings (or string_types).
+
+    Args:
+      input_obj (object): the object in question
+
+    Returns:
+      bool: whether or not the object is a list of strings
+    """
 
     return bool(input_obj) and isinstance(input_obj, (
         list, tuple)) and not isinstance(input_obj, string_types) and all(

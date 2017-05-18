@@ -216,6 +216,17 @@ PROCESSOR_TESTS = [
 ]
 
 
+@pytest.mark.parametrize("input_obj, expected", [
+    (["a", "b", "c"], True),
+    (("a", "b", "c"), True),
+    (["a", 1, "c"], False),
+    (("a", 1, "c"), False),
+    ((u"a", "b", "c"), True)
+])
+def test_list_of_strings(input_obj, expected):
+
+    assert frkl.is_list_of_strings(input_obj) == expected
+
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):
 
@@ -256,8 +267,9 @@ def test_processor(processor, input_config, context_key, expected):
 def test_ensure_fail_url_processor(input_url):
 
     prc = frkl.EnsureUrlProcessor()
+    prc.set_current_config(input_url)
     with pytest.raises(frkl.FrklConfigException):
-        prc.process(input_url)
+        prc.process()
 
 @pytest.mark.parametrize("config, expected", [
     ({"a": 1}, {"vars": {'a': 1}})
@@ -277,7 +289,8 @@ def test_frkl_invalid_config(config):
     frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config)
     with pytest.raises(frkl.FrklConfigException):
-        frkl_obj.process()
+        for i in frkl_obj.process():
+            print(i)
 
 
 def test_frkl_yield():
