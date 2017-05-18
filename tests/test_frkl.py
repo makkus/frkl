@@ -18,6 +18,7 @@ import pytest
 import yaml
 
 from frkl import cli, frkl
+from frkl.frkl import *
 
 #from click.testing import CliRunner
 
@@ -172,11 +173,11 @@ ENSURE_PYTHON_CHAIN = [
 ]
 
 FRKL_INIT_PARAMS = {
-        "stem_key": "childs",
-        "default_leaf_key": "task",
-        "default_leaf_default_key": "task_name",
-        "other_valid_keys": ["vars"],
-        "default_leaf_key_map": "vars"
+        STEM_KEY_NAME: "childs",
+        DEFAULT_LEAF_KEY_NAME: "task",
+        DEFAULT_LEAF_DEFAULT_KEY_NAME: "task_name",
+        OTHER_VALID_KEYS_NAME: ["vars"],
+        DEFAULT_LEAF_KEY_MAP_NAME: "vars"
     }
 FRKLIZE_CHAIN = [
     frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(),
@@ -214,7 +215,6 @@ PROCESSOR_TESTS = [
     (ABBREV_FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_5.yml"),
      "frkl", TEST_FRKLIZE_1_RESULT_DOUBLE)
 ]
-
 
 @pytest.mark.parametrize("input_obj, expected", [
     (["a", "b", "c"], True),
@@ -290,24 +290,3 @@ def test_frkl_invalid_config(config):
     with pytest.raises(frkl.FrklConfigException):
         for i in frkl_obj.process():
             print(i)
-
-
-def test_frkl_yield():
-
-    frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
-    config_1 = {"vars": {"aa": 11}, "childs": [{"task": {"type": "test11"}, "vars": {"bb": 22}}]}
-    config_2 = {"vars": {"a": 1}, "childs": [{"task": {"type": "test"}, "vars": {"b": 2}}, {"task": {"type": "another"}, "vars": {"c": 3}}, {"vars": {"d": 4}, "task": {"type": "3rd"}}]}
-    config_0 = {"vars": {"eee": 444}}
-    config_4 = {"vars": {"gg": 66}, "childs": [{"task": {"type": "test_NEW"}, "vars": {"bb": 22}}]}
-    frkl_obj.set_current_config(config_1, {"last_call": False})
-    frkl_obj.set_current_config(config_2, {"last_call": False})
-    frkl_obj.set_current_config(config_0, {"last_call": False})
-    frkl_obj.set_current_config(config_4, {"last_call": False})
-
-    result = frkl_obj.process()
-
-    # print(result)
-    for i in result:
-        print("---------------")
-        pprint.pprint(i)
-        print("---------------")

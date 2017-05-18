@@ -5,7 +5,7 @@
 - processor:
     type: deserialize
 - processor:
-    type: load
+    type: load_additional_configs
 - processor:
     type: frklize
   init:

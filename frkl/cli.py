@@ -59,6 +59,5 @@ def print_config(ctx, config):
     print("# ----------------------------------------\n".join(result))
 
 
-
 if __name__ == "__main__":
     cli()

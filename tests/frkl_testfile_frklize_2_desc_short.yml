@@ -1,7 +1,7 @@
 - expand_url
 - read
 - deserialize
-- load
+- load_additional_configs
 - frklize:
     stem_key: childs
     default_leaf_key: task

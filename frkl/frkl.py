@@ -39,12 +39,18 @@ __metaclass__ = type
 
 log = logging.getLogger("frkl")
 
+STEM_KEY_NAME = "stem_key"
+DEFAULT_LEAF_KEY_NAME = "default_leaf_key"
+DEFAULT_LEAF_DEFAULT_KEY_NAME = "default_leaf_default_key"
+OTHER_VALID_KEYS_NAME = "other_valid_keys"
+DEFAULT_LEAF_KEY_MAP_NAME = "default_leaf_key_map"
+
 FRKL_DEFAULT_PARAMS = {
-        "stem_key": "childs",
-        "default_leaf_key": "task",
-        "default_leaf_default_key": "task_name",
-        "other_valid_keys": ["vars"],
-        "default_leaf_key_map": "vars"
+        STEM_KEY_NAME: "childs",
+        DEFAULT_LEAF_KEY_NAME: "task",
+        DEFAULT_LEAF_DEFAULT_KEY_NAME: "task_name",
+        OTHER_VALID_KEYS_NAME: ["vars"],
+        DEFAULT_LEAF_KEY_MAP_NAME: "vars"
     }
 
 PLACEHOLDER = -9876
@@ -462,12 +468,12 @@ class FrklProcessor(ConfigProcessor):
 
     def validate_init(self):
 
-        self.stem_key = self.init_params['stem_key']
-        self.default_leaf_key = self.init_params['default_leaf_key']
+        self.stem_key = self.init_params[STEM_KEY_NAME]
+        self.default_leaf_key = self.init_params[DEFAULT_LEAF_KEY_NAME]
         self.default_leaf_default_key = self.init_params[
-            'default_leaf_default_key']
-        self.other_valid_keys = self.init_params['other_valid_keys']
-        self.default_leaf_key_map = self.init_params['default_leaf_key_map']
+            DEFAULT_LEAF_DEFAULT_KEY_NAME]
+        self.other_valid_keys = self.init_params[OTHER_VALID_KEYS_NAME]
+        self.default_leaf_key_map = self.init_params[DEFAULT_LEAF_KEY_MAP_NAME]
         if isinstance(self.default_leaf_key_map, string_types):
             self.default_leaf_key_map = {"*": self.default_leaf_key_map}
         elif isinstance(self.default_leaf_key_map, dict):
@@ -478,9 +484,6 @@ class FrklProcessor(ConfigProcessor):
 
         self.all_keys = set([self.stem_key, self.default_leaf_key])
         self.all_keys.update(self.other_valid_keys)
-
-        self.break_key = self.init_params.get('break_key', None)
-        self.break_marker = self.init_params.get('break_marker', None)
 
         return True
 
@@ -757,11 +760,11 @@ DEFAULT_PROCESSOR_CHAIN = [
 
 # format of processor init dicts
 BOOTSTRAP_FRKL_FORMAT = {
-    "stem_key": "processors",
-    "default_leaf_key": "processor",
-    "default_leaf_default_key": "type",
-    "other_valid_keys": ["init"],
-    "default_leaf_key_map": "init"
+    STEM_KEY_NAME: "processors",
+    DEFAULT_LEAF_KEY_NAME: "processor",
+    DEFAULT_LEAF_DEFAULT_KEY_NAME: "type",
+    OTHER_VALID_KEYS_NAME: ["init"],
+    DEFAULT_LEAF_KEY_MAP_NAME: "init"
 }
 # chain to bootstrap processor_chain in order to generate a frkl object
 BOOTSTRAP_PROCESSOR_CHAIN = [

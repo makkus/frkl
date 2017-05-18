@@ -45,7 +45,7 @@ setup(
             'frklize=frkl:FrklProcessor',
             'render_template=frkl:Jinja2TemplateProcessor',
             'regex=frkl:RegexProcessor',
-            'load=frkl:LoadMoreConfigsProcessor',
+            'load_additional_configs=frkl:LoadMoreConfigsProcessor',
             'to_yaml=frkl:ToYamlProcessor',
             'merge=frkl:MergeProcessor'
         ]
