@@ -1,13 +1,13 @@
 - processor:
-    name: abbrev
+    type: abbrev
 - processor:
-    name: url
+    type: url
 - processor:
-    name: python_object
+    type: python_object
 - processor:
-    name: load_more_configs
+    type: load_more_configs
 - processor:
-    name: expand
+    type: expand
   init:
     stem_key: childs
     default_leaf_key: task
@@ -16,6 +16,6 @@
        - vars
     default_leaf_key_map: vars
 - processor:
-    name: merge
+    type: merge
 - processor:
-    name: to_yaml
+    type: to_yaml

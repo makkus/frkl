@@ -232,7 +232,7 @@ class FrklFactoryCallback(FrklCallback):
     def callback(self, item):
         self.processors.append(item)
 
-        ext_name = item.get('processor', {}).get('name', None)
+        ext_name = item.get('processor', {}).get('type', None)
         if not ext_name:
             raise FrklConfigException(
                 "Can't parse processor name using config: {}".format(item))
