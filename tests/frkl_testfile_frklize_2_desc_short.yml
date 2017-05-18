@@ -1,9 +1,8 @@
-- abbrev
-- url
-- python_object
-- load_more_configs
-- expand:
-   init:
+- expand_url
+- read
+- deserialize
+- load
+- frklize:
     stem_key: childs
     default_leaf_key: task
     default_leaf_default_key: task_name

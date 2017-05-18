@@ -39,13 +39,13 @@ setup(
             'frkl=frkl.cli:cli'
         ],
         'frkl.frk': [
-            'abbrev=frkl:UrlAbbrevProcessor',
-            'url=frkl:EnsureUrlProcessor',
-            'python_object=frkl:EnsurePythonObjectProcessor',
-            'expand=frkl:FrklProcessor',
-            'template=frkl:Jinja2TemplateProcessor',
+            'expand_url=frkl:UrlAbbrevProcessor',
+            'read=frkl:EnsureUrlProcessor',
+            'deserialize=frkl:EnsurePythonObjectProcessor',
+            'frklize=frkl:FrklProcessor',
+            'render_template=frkl:Jinja2TemplateProcessor',
             'regex=frkl:RegexProcessor',
-            'load_more_configs=frkl:LoadMoreConfigsProcessor',
+            'load=frkl:LoadMoreConfigsProcessor',
             'to_yaml=frkl:ToYamlProcessor',
             'merge=frkl:MergeProcessor'
         ]

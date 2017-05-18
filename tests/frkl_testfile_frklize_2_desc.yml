@@ -1,13 +1,13 @@
 - processor:
-    type: abbrev
+    type: expand_url
 - processor:
-    type: url
+    type: read
 - processor:
-    type: python_object
+    type: deserialize
 - processor:
-    type: load_more_configs
+    type: load
 - processor:
-    type: expand
+    type: frklize
   init:
     stem_key: childs
     default_leaf_key: task
