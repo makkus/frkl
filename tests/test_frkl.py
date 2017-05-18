@@ -266,9 +266,9 @@ def test_processor(processor, input_config, context_key, expected):
 def test_ensure_fail_url_processor(input_url):
 
     prc = frkl.EnsureUrlProcessor()
-    prc.set_current_config(input_url)
+    prc.set_current_config(input_url, {"last_call": False})
     with pytest.raises(frkl.FrklConfigException):
-        prc.process_current_config()
+        prc.process()
 
 @pytest.mark.parametrize("config, expected", [
     ({"a": 1}, {"vars": {'a': 1}})
@@ -276,8 +276,8 @@ def test_ensure_fail_url_processor(input_url):
 def test_frkl_valid_config(config, expected):
 
     frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
-    frkl_obj.set_current_config(config)
-    frkl_obj.process_current_config()
+    frkl_obj.set_current_config(config, {"last_call": False})
+    frkl_obj.process()
 
 @pytest.mark.parametrize("config", [
     ({"a": 1, "vars": 2}),
@@ -286,9 +286,9 @@ def test_frkl_valid_config(config, expected):
 def test_frkl_invalid_config(config):
 
     frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
-    frkl_obj.set_current_config(config)
+    frkl_obj.set_current_config(config, {"last_call": False})
     with pytest.raises(frkl.FrklConfigException):
-        for i in frkl_obj.process_current_config():
+        for i in frkl_obj.process():
             print(i)
 
 
@@ -299,12 +299,12 @@ def test_frkl_yield():
     config_2 = {"vars": {"a": 1}, "childs": [{"task": {"type": "test"}, "vars": {"b": 2}}, {"task": {"type": "another"}, "vars": {"c": 3}}, {"vars": {"d": 4}, "task": {"type": "3rd"}}]}
     config_0 = {"vars": {"eee": 444}}
     config_4 = {"vars": {"gg": 66}, "childs": [{"task": {"type": "test_NEW"}, "vars": {"bb": 22}}]}
-    frkl_obj.set_current_config(config_1)
-    frkl_obj.set_current_config(config_2)
-    frkl_obj.set_current_config(config_0)
-    frkl_obj.set_current_config(config_4)
+    frkl_obj.set_current_config(config_1, {"last_call": False})
+    frkl_obj.set_current_config(config_2, {"last_call": False})
+    frkl_obj.set_current_config(config_0, {"last_call": False})
+    frkl_obj.set_current_config(config_4, {"last_call": False})
 
-    result = frkl_obj.process_current_config()
+    result = frkl_obj.process()
 
     # print(result)
     for i in result:

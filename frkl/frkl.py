@@ -208,6 +208,19 @@ class MergeResultCallback(FrklCallback):
     def result(self):
         return self.result_list
 
+class ExtendResultCallback(FrklCallback):
+    """Simple callback, extends an internal list with the processing results.
+    """
+
+    def __init__(self):
+        self.result_list = []
+
+    def callback(self, process_result):
+        self.result_list.extend(process_result)
+
+    def result(self):
+        return self.result_list
+
 class FrklFactoryCallback(FrklCallback):
     """Helper callback method, creates a new Frkl object by processing a list of processor init dicts.
     """
@@ -265,16 +278,20 @@ class ConfigProcessor(object):
 
         return True
 
-    def set_current_config(self, input_config):
+    def set_current_config(self, input_config, context):
         """Sets the current configuration.
 
         Calls the 'new_config' method after assigning the new input configuration to the 'self.current_input_config' variable.
 
         Args:
           input_config (object): current configuration to be processed
+          context (dict): dict that describes the current context / processing state
         """
 
         self.current_input_config = input_config
+        self.current_context = copy.deepcopy(context)
+
+        self.last_call = self.current_context["last_call"]
         self.new_config()
 
     def new_config(self):
@@ -284,7 +301,6 @@ class ConfigProcessor(object):
         """
 
         pass
-
 
     def get_additional_configs(self):
         """Returns additional configs if applicable.
@@ -297,18 +313,53 @@ class ConfigProcessor(object):
 
         return None
 
+    def process(self):
+        """Processes the config url or content.
+
+        Calls the 'process_current_config' method internally
+
+        Args:
+          input_config (object): input configuration url or content
+          last_call (bool): whether this is the 'special' last round of processing
+
+        Returns:
+          object: processed config url or content
+        """
+
+
+        if self.last_call:
+            if self.current_input_config or self.handles_last_call():
+                return self.process_current_config()
+            else:
+                return None
+        else:
+            return self.process_current_config()
+
+    def handles_last_call(self):
+        """Returns whether this processor wants to be called at the end of a processing run again.
+
+        If the preceiding processer returns a non-None value, this is ignored and the processor is called anyway.
+
+        Returns:
+          bool: whether to call this processor for the 'special' last run
+        """
+
+        return False
+
     @abc.abstractmethod
     def process_current_config(self):
         """Processes the config url or content.
 
         Args:
           input_config (object): input configuration url or content
+          last_call (bool): whether this is the 'special' last round of processing
 
         Returns:
           object: processed config url or content
         """
 
         pass
+
 
 class EnsureUrlProcessor(ConfigProcessor):
     """Makes sure the provided string is a url, then downloads the target and reads the content."""
@@ -364,6 +415,37 @@ class EnsurePythonObjectProcessor(ConfigProcessor):
         return config_obj
 
 
+class ToYamlProcessor(ConfigProcessor):
+    """Takes a python object and returns the string representation.
+    """
+
+    def process_current_config(self):
+
+        result = yaml.dump(self.current_input_config, default_flow_style=False)
+        return result
+
+class MergeProcessor(ConfigProcessor):
+    """Gathers all configs and returns a list of all results as single element."""
+
+    def __init__(self, init_params={}):
+
+        super(MergeProcessor, self).__init__(init_params)
+        self.configs = []
+
+    def new_config(self):
+        if not self.last_call:
+            self.configs.append(self.current_input_config)
+
+    def process_current_config(self):
+
+        if self.last_call:
+            return self.configs
+        else:
+            return None
+
+    def handles_last_call(self):
+        return True
+
 class FrklProcessor(ConfigProcessor):
     """A processor to 'expand' python dictionaries using a pre-defined schema.
 
@@ -372,11 +454,8 @@ class FrklProcessor(ConfigProcessor):
     """
 
     def __init__(self, init_params={}):
-        self.init_params = init_params
 
-        msg = self.validate_init()
-        if not msg == True:
-            raise FrklConfigException(msg)
+        super(FrklProcessor, self).__init__(init_params)
 
         self.values_so_far = {}
         self.configs = []
@@ -506,6 +585,7 @@ class FrklProcessor(ConfigProcessor):
             else:
                 for item in self.frklize(stem_branch, copy.deepcopy(current_vars)):
                     yield item
+
 
 
 class Jinja2TemplateProcessor(ConfigProcessor):
@@ -778,6 +858,8 @@ class Frkl(object):
         idx = 0
 
         configs_copy = copy.deepcopy(self.configs)
+        context = {}
+        context["last_call"] = False
 
         while configs_copy:
 
@@ -785,13 +867,27 @@ class Frkl(object):
                 raise FrklConfigException("More than 1024 configs, this looks like a loop, exiting.")
 
             config = configs_copy.pop(0)
+            context["current_original_config"] = config
 
-            self.process_single_config(config, self.processor_chain, callback, configs_copy)
+            self.process_single_config(config, self.processor_chain, callback, configs_copy, context)
 
+        current_config = None
+        context["next_configs"] = []
+
+        for idx, prc in enumerate(self.processor_chain):
+            context["current_config"] = current_config
+            context["last_call"] = True
+            context["current_processor_chain"] = self.processor_chain[idx:]
+            context["current_processor"] = prc
+            prc.set_current_config(current_config, context)
+            current_config = prc.process()
+
+        if current_config:
+            callback.callback(current_config)
 
         return callback.result()
 
-    def process_single_config(self, config, processor_chain, callback, configs_copy):
+    def process_single_config(self, config, processor_chain, callback, configs_copy, context):
         """Helper method to be able to recursively call the next processor in the chain.
 
         Args:
@@ -799,6 +895,7 @@ class Frkl(object):
           processor_chain (list): the list of processor items to use (reduces by one with every recursive run)
           callback (FrklCallback): the callback that receives any potential results
           configs_copy (list): list of configs that still need processing, this method might prepend newly processed configs to this
+          context (dict): context object, can be used by processors to investigate current state, history, etc.
         """
 
         if not config:
@@ -809,14 +906,23 @@ class Frkl(object):
             return
 
         current_processor = processor_chain[0]
-        current_processor.set_current_config(copy.deepcopy(config))
+        temp_config = copy.deepcopy(config)
+
+        context["current_processor"] = current_processor
+        context["current_config"] = temp_config
+        context["current_processor_chain"] = processor_chain
+        context["next_configs"] = configs_copy
+
+        current_processor.set_current_config(temp_config, context)
+
         additional_configs = current_processor.get_additional_configs()
         if additional_configs:
             configs_copy[0:0] = additional_configs
 
-        last_processing_result = current_processor.process_current_config()
+        last_processing_result = current_processor.process()
         if isinstance(last_processing_result, types.GeneratorType):
             for item in last_processing_result:
-                self.process_single_config(item, processor_chain[1:], callback, configs_copy)
+                self.process_single_config(item, processor_chain[1:], callback, configs_copy, context)
+
         else:
-            self.process_single_config(last_processing_result, processor_chain[1:], callback, configs_copy)
+            self.process_single_config(last_processing_result, processor_chain[1:], callback, configs_copy, context)

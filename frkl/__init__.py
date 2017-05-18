@@ -6,5 +6,5 @@ __version__ = '0.1.0'
 
 from .frkl import (EnsurePythonObjectProcessor, EnsureUrlProcessor,
                    FrklProcessor, Jinja2TemplateProcessor,
-                   LoadMoreConfigsProcessor, RegexProcessor,
-                   UrlAbbrevProcessor)
+                   LoadMoreConfigsProcessor, MergeProcessor, RegexProcessor,
+                   ToYamlProcessor, UrlAbbrevProcessor)

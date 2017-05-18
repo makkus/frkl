@@ -15,15 +15,7 @@
     other_valid_keys: 
        - vars
     default_leaf_key_map: vars
-
-
-
-
-
-
-
-
-
-
-
-    
+- processor:
+    name: merge
+- processor:
+    name: to_yaml
