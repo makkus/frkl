@@ -1,0 +1,22 @@
+init:
+  use_context: True
+processors:
+  - expand_url
+  - read
+  - render_template:
+      use_environment_vars: environment
+      template_values:
+         config:
+           a: repl_a
+           b: repl_b
+           c: repl_c
+           d: repl_d
+  - deserialize
+  - frklize:
+      child_marker: childs
+      default_leaf: task
+      default_leaf_key: task_name
+      other_keys:
+        - repl
+      key_move_map:
+        '*': vars

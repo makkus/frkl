@@ -1,15 +1,11 @@
-- vars:
-    "a": 1
-    "b": 2
-    "aa": 11
-    "bb": 22
-  task:
-    "task_name": "task1"
+- task:
+    task_name: config
+  vars:
+    a: repl_a
+    b: repl_b
 
-- vars:
-    "a": 1
-    "b": 2
-    "cc": 33
-    "dd": 44
-  task:
-    "task_name": "task2"
+- task:
+    task_name: config
+  vars:
+    c: repl_c
+    d: repl_d

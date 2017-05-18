@@ -39,6 +39,9 @@ __metaclass__ = type
 
 log = logging.getLogger("frkl")
 
+FRKL_CONTEXT_DEFAULT_KEY = "frkl_vars"
+ENVIRONMENT_VARS_DEFAULT_KEY = "env"
+
 STEM_KEY_NAME = "child_marker"
 DEFAULT_LEAF_KEY_NAME = "default_leaf"
 DEFAULT_LEAF_DEFAULT_KEY_NAME = "default_leaf_key"
@@ -295,7 +298,7 @@ class ConfigProcessor(object):
         """
 
         self.current_input_config = input_config
-        self.current_context = copy.deepcopy(context)
+        self.current_context = context
 
         self.last_call = self.current_context["last_call"]
         self.new_config()
@@ -484,6 +487,13 @@ class FrklProcessor(ConfigProcessor):
         self.all_keys.update(self.other_valid_keys)
         self.all_keys.update(self.default_leaf_key_map.values())
 
+        self.use_context = self.init_params.get("use_context", False)
+        if self.use_context and isinstance(self.use_context, bool):
+            self.use_context = FRKL_CONTEXT_DEFAULT_KEY
+        elif self.use_context and  not isinstance(self.use_context, string_types):
+            raise FrklConfigException("'use_context' keyword needs to be of type bool or string: {}".format(self.init_params))
+
+
         return True
 
     def new_config(self):
@@ -493,6 +503,9 @@ class FrklProcessor(ConfigProcessor):
             self.configs.extend(self.current_input_config)
         else:
             self.configs.append(self.current_input_config)
+
+        if self.use_context:
+            self.current_context[self.use_context] = self.values_so_far
 
 
     def process_current_config(self):
@@ -603,14 +616,38 @@ class Jinja2TemplateProcessor(ConfigProcessor):
     def validate_init(self):
 
         self.template_values = self.init_params["template_values"]
+        self.use_environment_vars = self.init_params.get("use_environment_vars", False)
+        if self.use_environment_vars and isinstance(self.use_environment_vars, bool):
+            self.use_environment_vars = ENVIRONMENT_VARS_DEFAULT_KEY
+        elif self.use_environment_vars and  not isinstance(self.use_environment_vars, string_types):
+            raise FrklConfigException("'use_context' keyword needs to be of type bool or string: {}".format(self.init_params))
+
         self.use_context = self.init_params.get("use_context", False)
+        if self.use_context and isinstance(self.use_context, bool):
+            self.use_context = FRKL_CONTEXT_DEFAULT_KEY
+        elif self.use_context and  not isinstance(self.use_context, string_types):
+            raise FrklConfigException("'use_context' keyword needs to be of type bool or string: {}".format(self.init_params))
+
 
         return True
 
     def process_current_config(self):
 
         rtemplate = Environment(loader=BaseLoader()).from_string(self.current_input_config)
-        config_string = rtemplate.render(self.template_values)
+        env = {}
+        if self.use_environment_vars:
+            envs = { self.use_environment_vars: os.environ }
+            dict_merge(env, envs, copy_dct=False)
+
+        if self.use_context:
+            frkl_vars = self.current_context.get(self.use_context, {})
+            dict_merge(env, frkl_vars, copy_dct=False)
+
+        dict_merge(env, self.template_values, copy_dct=False)
+        print()
+        pprint.pprint(env)
+
+        config_string = rtemplate.render(env)
 
         return config_string
 

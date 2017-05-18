@@ -2,6 +2,12 @@
 - read
 - render_template:
     use_context: True
+    template_values:
+       config:
+         a: repl_a
+         b: repl_b
+         c: repl_c
+         d: repl_d
 - deserialize
 - frklize:
     child_marker: childs

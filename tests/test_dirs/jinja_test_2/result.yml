@@ -1,0 +1,17 @@
+- task:
+    task_name: config
+  vars:
+    a: repl_ext_a
+    b: repl_ext_b
+  repl:
+    ext_a: repl_ext_a
+    ext_b: repl_ext_b
+
+- task:
+    task_name: config
+  vars:
+    c: repl_c
+    d: repl_d
+  repl:
+    ext_a: repl_ext_a
+    ext_b: repl_ext_b
