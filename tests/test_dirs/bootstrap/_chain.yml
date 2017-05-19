@@ -1,0 +1,16 @@
+- expand_url
+- read
+- render_template:
+    use_environment_vars: true
+    use_context: true
+- deserialize
+- frklize:
+    child_marker: tasks
+    default_leaf: task
+    default_leaf_key: task_name
+    use_context: true
+    key_move_map:
+       '*': vars
+       create-folder: vars/folders-to-create
+       delete: vars/files-to-delete
+

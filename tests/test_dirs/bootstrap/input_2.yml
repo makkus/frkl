@@ -1,0 +1,111 @@
+---
+vars:
+
+  # used by 'update-package-cache' and 'upgrade-all-packages'
+  pkg_mgrs:
+    - default
+    - nix
+    - conda
+
+tasks:
+
+  # installing base package managers, update cache and upgrade packages if necessary
+  - tasks:
+      - install-nix
+      - install-conda
+      - update-package-cache
+      - upgrade-all-packages
+
+  # installing this first, so I can start running emacs spacemacs init in the background if I want to
+  - tasks:
+      - install:
+          pkg_mgr: git
+          packages:
+            - spacemacs:
+                pkgs:
+                  - dest: ~/.emacs.d
+                    repo: https://github.com/syl20bnr/spacemacs
+            - zplug:
+                pkgs:
+                  - dest: ~/.zplug
+                    repo: https://github.com/zplug/zplug
+      - install:
+          pkg_mgr: nix
+          packages:
+            - emacs
+            - zsh
+
+  # checkout dotfiles, preparing home folder files and links
+  - tasks:
+      - checkout-dotfiles
+      # delete (vanilla/default) distro config files before stowing my own
+      - delete:
+          - .bashrc
+          - .profile
+      # stow dotfiles
+      - stow
+      # install packages from dotfiles
+      - install:
+          use_dotfiles: yes
+
+  # install default (deb/rpm)  packages
+  - tasks:
+      # install default system packages
+      - install:
+          pkg_mgr: apt
+          packages: {{ vars.deb_pkgs }}
+      - install:
+          pkg_mgr: apt
+          packages: {{ vars.ext_deb_pkgs }}
+
+      # install nix packages
+      - install:
+          pkg_mgr: nix
+          packages: {{ vars.nix_pkgs }}
+
+  # create i3 xsession for lightdm
+  - tasks:
+      - file:
+          task:
+            become: yes
+            desc: 'create dir'
+            detail: '/usr/share/xsessions'
+          vars:
+            path: /usr/share/xsessions
+            state: directory
+      - copy:
+          task:
+            become: yes
+            desc: 'add i3_xsession.desktop file to available sessions'
+          vars:
+            src: ~/dotfiles/freckles/files/i3_xsession.desktop
+            dest: /usr/share/xsessions/i3_xsession.desktop
+
+  # prepare misc. folders/files
+  - tasks:
+        - create-folder:
+            - ~/.backups/zile
+            - ~/.emacs.d/.cache/layouts/
+
+  # user stuff: make zsh default shell, ssh key, etc...
+  - tasks:
+      - lineinfile:
+          task:
+            become: yes
+            desc: 'adding nix zsh to available shells'
+          vars:
+            dest: /etc/shells
+            line: /nix/var/nix/profiles/default/bin/zsh
+      - shell:
+          task:
+            become: yes
+            desc: 'changing default shell for {{ env.USER }} to zsh'
+          vars:
+            free_form: usermod -s /nix/var/nix/profiles/default/bin/zsh {{ env.USER }}
+      - user:
+          task:
+            desc: 'generating ssh key'
+          vars:
+            name: {{ env.USER }}
+            generate_ssh_key: yes
+            ssh_key_bits: 2048

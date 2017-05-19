@@ -55,7 +55,7 @@ This task list describes how we want to clean three things, two of which are at 
        location: at_work
        task_type: cleaning
 
-Basically, this is what *frkl* does: expanding (and also modifying) configuration from as minimal as possible to as comprehensive as necessary.
+Basically, this is what *frkl* does: expanding (and also modifying if wanted) configuration from as minimal as possible to as comprehensive as necessary.
 
 Now, of course, in this example the reduction in size is not that big. And, one might argue, not having a fixed schema might not be a good idea in the first place. I can even see the point, but I do like being able to express myself as simple and minimal as possible. Obviously we are introducing more fragility by loosening up our schema. But we gain clarity, and ease of use. Whether this trade-off is justifiable or not depends on the situation I think. This library is for the situations where it is :-)
 

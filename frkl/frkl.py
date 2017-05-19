@@ -42,11 +42,21 @@ log = logging.getLogger("frkl")
 FRKL_CONTEXT_DEFAULT_KEY = "frkl_vars"
 ENVIRONMENT_VARS_DEFAULT_KEY = "env"
 
+DEFAULT_LEAF_DEFAULT_KEY = "default"
+
 STEM_KEY_NAME = "child_marker"
 DEFAULT_LEAF_KEY_NAME = "default_leaf"
 DEFAULT_LEAF_DEFAULT_KEY_NAME = "default_leaf_key"
 OTHER_VALID_KEYS_NAME = "other_keys"
 DEFAULT_LEAF_KEY_MAP_NAME = "key_move_map"
+
+# duplication of above vars, above vars will be removed after refactoring
+CHILD_MARKER_NAME = "child_marker"
+DEFAULT_LEAF_NAME = "default_leaf"
+DEFAULT_LEAFKEY_NAME = "default_leaf_key"
+OTHER_KEYS_NAME = "other_keys"
+KEY_MOVE_MAP_NAME = "key_move_map"
+
 
 FRKL_DEFAULT_PARAMS = {
         STEM_KEY_NAME: "childs",
@@ -202,6 +212,16 @@ class FrklCallback(object):
         Returns:
           object: the current state of the callback
         """
+        pass
+
+    def started(self):
+        """Optional method that can be overwritten if the callback needs to know when the processing has started."""
+
+        pass
+
+    def finished(self):
+        """Optional method that can be overwritten if the callback needs to know when the processing has finished."""
+
         pass
 
 
@@ -478,14 +498,42 @@ class FrklProcessor(ConfigProcessor):
         self.other_valid_keys = self.init_params.get(OTHER_VALID_KEYS_NAME, [])
         self.default_leaf_key_map = self.init_params[DEFAULT_LEAF_KEY_MAP_NAME]
         if isinstance(self.default_leaf_key_map, string_types):
-            self.default_leaf_key_map = {"*": self.default_leaf_key_map}
-        elif not isinstance(self.default_leaf_key_map, dict):
+            if "/" in self.default_leaf_key_map:
+                tokens = self.default_leaf_key_map.split("/")
+                if not len(tokens) is 2:
+                    raise FrklConfigException("Default value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".fromat(self.default_leaf_key_map))
+                self.default_leaf_key_map = {"*": (tokens[0], tokens[1])}
+            else:
+                self.default_leaf_key_map = {"*": (self.default_leaf_key_map, DEFAULT_LEAF_DEFAULT_KEY)}
+        elif isinstance(self.default_leaf_key_map, dict):
+            # make sure the move_key_map has the right format
+            for key in self.default_leaf_key_map.keys():
+                value = self.default_leaf_key_map[key]
+                if isinstance(value, (list, tuple)):
+                    if not len(value) is 2:
+                        raise FrklConfigException("Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".fromat(value))
+                    self.default_leaf_key_map[key] = value
+                else:
+                    if not isinstance(value, string_types) and not len(value) is 2:
+                        raise FrklConfigException("move_key_map needs a list or tuple as value type with length '2': {}".format(self.default_leaf_key_map))
+
+                    if "/" in value:
+                        tokens = value.split("/")
+                        if not len(tokens) is 2:
+                            raise FrklConfigException("Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".fromat(value))
+                        self.default_leaf_key_map[key] = (tokens[0], tokens[1])
+                    else:
+                        self.default_leaf_key_map[key] = (value, DEFAULT_LEAF_DEFAULT_KEY)
+
+        else:
             return "Type '{}' not supported for move_key_map.".format(
                 type(self.default_leaf_key_map))
 
         self.all_keys = set([self.stem_key, self.default_leaf_key])
         self.all_keys.update(self.other_valid_keys)
-        self.all_keys.update(self.default_leaf_key_map.values())
+
+        for item in self.default_leaf_key_map.values():
+            self.all_keys.add(item[0])
 
         self.use_context = self.init_params.get("use_context", False)
         if self.use_context and isinstance(self.use_context, bool):
@@ -560,17 +608,27 @@ class FrklProcessor(ConfigProcessor):
                     new_value.setdefault(insert_leaf_key, {})[insert_leaf_key_key] = key
 
                     if not isinstance(value, dict):
-                        raise FrklConfigException("Non-dict values for default leaf key items not supported (yet?): {}".format(value))
-                    if all(x in self.all_keys for x in value.keys()):
-                        dict_merge(new_value, value, copy_dct=False)
-                    elif all(x not in self.all_keys for x in value.keys()):
                         if key in self.default_leaf_key_map.keys():
-                            migrate_key = self.default_leaf_key_map[key]
+                            val_key = self.default_leaf_key_map[key][0]
+                            val_key_key = self.default_leaf_key_map[key][1]
                         elif '*' in self.default_leaf_key_map.keys():
-                            migrate_key = self.default_leaf_key_map['*']
+                            val_key = self.default_leaf_key_map['*'][0]
+                            val_key_key = self.default_leaf_key_map['*'][1]
                         else:
-                            raise FrklConfigException("Can't find default_leaf_key to move values of key '{}".format(key))
-                        new_value[migrate_key] = value
+                            raise FrklConfigException("Can't find entry in move_key_map for key '{}' in order to move value: {}").format(key, value)
+                        new_value.setdefault(val_key, {})[val_key_key] = value
+
+                    else:
+                        if all(x in self.all_keys for x in value.keys()):
+                            dict_merge(new_value, value, copy_dct=False)
+                        elif all(x not in self.all_keys for x in value.keys()):
+                            if key in self.default_leaf_key_map.keys():
+                                migrate_key = self.default_leaf_key_map[key][0]
+                            elif '*' in self.default_leaf_key_map.keys():
+                                migrate_key = self.default_leaf_key_map['*'][0]
+                            else:
+                                raise FrklConfigException("Can't find default_leaf_key to move values of key '{}".format(key))
+                            new_value[migrate_key] = value
 
             else:
                 # check whether all keys are allowed
@@ -615,7 +673,7 @@ class Jinja2TemplateProcessor(ConfigProcessor):
 
     def validate_init(self):
 
-        self.template_values = self.init_params["template_values"]
+        self.template_values = self.init_params.get("template_values", {})
         self.use_environment_vars = self.init_params.get("use_environment_vars", False)
         if self.use_environment_vars and isinstance(self.use_environment_vars, bool):
             self.use_environment_vars = ENVIRONMENT_VARS_DEFAULT_KEY
@@ -644,8 +702,6 @@ class Jinja2TemplateProcessor(ConfigProcessor):
             dict_merge(env, frkl_vars, copy_dct=False)
 
         dict_merge(env, self.template_values, copy_dct=False)
-        print()
-        pprint.pprint(env)
 
         config_string = rtemplate.render(env)
 
@@ -765,6 +821,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
         """
 
+        pprint.pprint(config)
         prefix, sep, rest = config.partition(':')
 
         if prefix in self.abbrevs.keys():
@@ -825,6 +882,106 @@ BOOTSTRAP_PROCESSOR_CHAIN = [
 ]
 
 class Frkl(object):
+
+    def init(files_or_folders, additional_configs=[], use_strings_as_config=False):
+        """Creates a Frkl object.
+
+        Args:
+          files_or_folders (list): a list of files or folders or url strings. if the item is a file or url string, it will be used as Frkl bootstrap config, if it is a folder, it is forwarded to the 'from_folder' method to get lists of bootstrap and/or config files
+          additional_configs (list): a list of files or url strings, used as configs for the initialized Frlk object
+          use_strings_as_config (bool): whether to use non-folder strings as config files (instead of to initialze the Frkl object, which is default)
+
+        Returns:
+          Frkl: the object
+        """
+
+        chain_files = []
+        config_files = []
+
+        for f in files_or_folders:
+            if not os.path.exists(f):
+                # means this is a url string
+                if not use_strings_as_config:
+                    chain_files.append(f)
+                else:
+                    config_files.append(f)
+            elif os.path.isfile(f):
+                # means we can use this directly
+                chain_files.append(f)
+            else:
+                temp_chain, temp_config = Frkl.get_configs(f)
+                chain_files.extend(temp_chain)
+                config_files.extend(temp_config)
+
+        if not chain_files:
+            raise FrklConfigException("No bootstrap information for Frkl found, can't create object.")
+
+        frkl_obj = Frkl.factory(chain_files, config_files)
+        return frkl_obj
+    init = staticmethod(init)
+
+    def from_folder(folders):
+        """Creates a Frkl object using a folder path as the only input.
+
+        The folder needs to contain one or more files that start with the '_' and end with '.yml',
+        which are used to bootstrap the frkl object by reading them in alphabetical order,
+        and one or more additional files with the 'yml' extension, which are then used as
+        input configurations, again in alphabetical order.
+
+        Args:
+          folders (list): paths to local folder(s)
+
+        Returns:
+          Frkl: the initialized Frkl object
+        """
+
+        chain_files, config_files = Frkl.get_configs(folders)
+
+        if not chain_files:
+            raise FrklConfigException("No bootstrap information for Frkl found, can't create object.")
+
+        frkl = frkl.factory(chain_files, config_files)
+        return frkl
+    from_folder = staticmethod(from_folder)
+
+
+    def get_configs(folders):
+        """Looks at a folder and retrieves configs.
+
+        The folders need to contain one or more files that start with the '_' and end with '.yml',
+        which are used to bootstrap the frkl object by reading them in alphabetical order,
+        and one or more additional files with the 'yml' extension, which are then used as
+        input configurations, again in alphabetical order.
+
+        Args:
+          folders (list): paths to one or several local folders
+
+        Returns:
+          tuple: first element of the tuple is a list of bootstrap configurations, 2nd element is a list of actual configs
+        """
+
+        if isinstance(folders, string_types):
+            folders = [folders]
+
+        all_chains = []
+        all_configs = []
+        for folder in folders:
+            chain_files = []
+            config_files = []
+            for child in os.listdir(folder):
+                if not child.startswith("__") and child.startswith("_") and child.endswith(".yml"):
+                    chain_files.append(os.path.join(folder, child))
+                elif child.endswith(".yml"):
+                    config_files.append(os.path.join(folder, child))
+
+            chain_files.sort()
+            config_files.sort()
+
+            all_chains.extend(chain_files)
+            all_configs.extend(config_files)
+
+        return (chain_files, config_files)
+    get_configs = staticmethod(get_configs)
 
     def factory(bootstrap_configs, frkl_configs=[]):
         """Factory method to easily create a Frkl object using a list of configurations to describe
@@ -916,6 +1073,8 @@ class Frkl(object):
         context = {}
         context["last_call"] = False
 
+        callback.started()
+
         while configs_copy:
 
             if len(configs_copy) > 1024:
@@ -939,6 +1098,8 @@ class Frkl(object):
 
         if current_config:
             callback.callback(current_config)
+
+        callback.finished()
 
         return callback.result()
 

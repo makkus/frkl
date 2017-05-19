@@ -13,7 +13,7 @@ requirements = [
     'Click==6.7',
     'six==1.10.0',
     'requests==2.13.0',
-    'jinja2==2.9.6',
+    'jinja2>=2.8.1',
     'stevedore==1.18.0'
 ]
 

@@ -1,0 +1,64 @@
+vars:
+
+  dotfiles:
+    - base_dir: ~/dotfiles
+      paths: ["minimal", "dev", "no-x", "x"]
+      remote: https://github.com/makkus/dotfiles-new.git
+
+  deb_pkgs:
+    - blueman
+    - gawk
+    - libpng-dev
+    - libpoppler-glib-dev
+    - libpoppler-private-dev
+    - libz-dev
+    - lightdm #TODO enable lightdm
+    - mpv
+    - network-manager
+    - network-manager-gnome
+    - pcscd
+    - pcsc-tools
+    - pulseaudio
+    - pypy
+    - pypy-dev
+    - python-dev
+    - python3-dev
+    - scdaemon
+    - tlp
+    - tlp-rdw
+    - virtualbox
+    - virtualbox-ext-pack
+    - x11-xserver-utils
+    - xfce4
+    - xfce4-goodies
+
+  ext_deb_pkgs:
+    - https://releases.hashicorp.com/vagrant/1.9.4/vagrant_1.9.4_x86_64.deb
+
+  nix_pkgs:
+    - anki
+    - autocutsel
+    - di
+    - python3.5-cookiecutter
+    - emacs
+    - fasd-unstable
+    - firefox
+    - git-crypt
+    - imagemagick
+    - i3status
+    - mu
+    - pandoc
+    - password-store
+    - pasystray
+    - ranger
+    - rofi
+    - rofi-pass
+    - scrot
+    - silver-searcher
+    - trash-cli
+    - xclip
+    - zsh
+
+  other:
+    - vagrant-proxyconf
+    - gsettings set org.gnome.desktop.background show-desktop-icons false

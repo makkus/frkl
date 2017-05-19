@@ -30,34 +30,34 @@ class Config(object):
 
 
 @click.group(invoke_without_command=True)
-@click.option('--frkl', '-f', multiple=True, help="config to bootstrap the frkl object itself")
 @click.option('--version', help='the version of frkl you are using', is_flag=True)
 @click.pass_context
-def cli(ctx, frkl, version):
+def cli(ctx, version):
     """Console script for frkl"""
 
     if version:
         click.echo(VERSION)
         sys.exit(0)
 
-    frkl_obj = Frkl.factory(frkl)
-
     ctx.obj = {}
-    ctx.obj['frkl'] = frkl_obj
 
 
 @cli.command("print-config")
+@click.option('--init', '-i', multiple=True, help="config to bootstrap the frkl object itself, if not provided, config strings need to contain at least one folder with init information, refer to documentation for more info")
 @click.argument('config', required=False, nargs=-1)
 @click.pass_context
-def print_config(ctx, config):
+def print_config(ctx, init, config):
 
-    frkl = ctx.obj['frkl']
-    frkl.set_configs(config)
-    result = frkl.process()
+    if not init:
+        frkl_obj = Frkl.init(config)
+    else:
+        frkl_obj = Frkl.factory(init, config)
+
+    result = frkl_obj.process()
 
     print("")
-    print("# ----------------------------------------\n".join(result))
-
+    print("\n# ----------------------------------------\n".join((pprint.pformat(x) for x in result)))
+    print("")
 
 if __name__ == "__main__":
     cli()

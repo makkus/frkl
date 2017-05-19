@@ -304,13 +304,14 @@ def test_frkl_invalid_config(config):
 def test_files(test_name):
 
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
-    chain_file = os.path.join(folder, "chain.yml")
+    chain_file = os.path.join(folder, "_chain.yml")
     input_files = []
     for child in os.listdir(folder):
-        if child.startswith("input_"):
+        if not child.startswith("_"):
             input_files.append(os.path.join(folder, child))
     input_files.sort()
-    result_file = os.path.join(folder, "result.yml")
+    pprint.pprint(input_files)
+    result_file = os.path.join(folder, "__result.yml")
 
     with open(result_file) as f:
         content = f.read()
@@ -320,8 +321,8 @@ def test_files(test_name):
     frkl_obj = frkl.Frkl.factory(chain_file, input_files)
     result_obj = frkl_obj.process()
 
-    # pprint.pprint(expected_obj)
-    # print("XXX")
-    # pprint.pprint(result_obj)
+    pprint.pprint(expected_obj)
+    print("XXX")
+    pprint.pprint(result_obj)
 
     assert expected_obj == result_obj
