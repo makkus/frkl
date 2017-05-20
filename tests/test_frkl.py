@@ -295,6 +295,9 @@ def test_frkl_invalid_config(config):
 @pytest.mark.parametrize("test_name", [
     "simple_test",
     "simple_test2",
+    "simple_test3",
+    "simple_test4",
+    "simple_test5",
     "load_single_config_test",
     "load_multiple_configs_test",
     "download_multiple_configs_test",

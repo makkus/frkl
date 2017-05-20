@@ -639,10 +639,10 @@ class FrklProcessor(ConfigProcessor):
                 new_value = config
 
 
-            if self.stem_key in new_value.keys() and self.default_leaf_key in new_value.keys():
-                raise FrklConfigException(
-                    "Configuration can't have both stem key ({}) and default leaf key ({}) on the same level: {}".
-                    format(self.stem_key, self.default_leaf_key, new_value))
+            # if self.stem_key in new_value.keys() and self.default_leaf_key in new_value.keys():
+                # raise FrklConfigException(
+                    # "Configuration can't have both stem key ({}) and default leaf key ({}) on the same level: {}".
+                    # format(self.stem_key, self.default_leaf_key, new_value))
 
             # at this point we have an 'expanded' dict
 
@@ -652,9 +652,8 @@ class FrklProcessor(ConfigProcessor):
             new_value = copy.deepcopy(current_vars)
 
             if stem_branch == NO_STEM_INDICATOR:
-                if self.default_leaf_key in new_value.keys():
+                if self.default_leaf_key in new_value.keys() and self.default_leaf_default_key in new_value[self.default_leaf_key].keys():
                     yield new_value
-
             else:
                 for item in self.frklize(stem_branch, copy.deepcopy(current_vars)):
                     yield item
