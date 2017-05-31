@@ -341,11 +341,8 @@ class ConfigProcessor(object):
         """
 
         if isinstance(input_config, types.GeneratorType):
-            for c in input_config:
-                print(c)
+            raise Exception("Can't deal with Type 'Generator' as a value.")
 
-            print("ENDING")
-            sys.exit(0)
 
         self.current_input_config = input_config
         self.current_context = context
@@ -922,7 +919,6 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
         """
 
-        pprint.pprint(config)
         prefix, sep, rest = config.partition(':')
 
         if prefix in self.abbrevs.keys():
@@ -1189,29 +1185,10 @@ class Frkl(object):
         current_config = None
         context["next_configs"] = []
 
-        for idx, prc in enumerate(self.processor_chain):
-            context["current_config"] = current_config
-            context["last_call"] = True
-            context["current_processor_chain"] = self.processor_chain[idx:]
-            context["current_processor"] = prc
-            prc.set_current_config(current_config, context)
-            current_config = prc.process()
-            if isinstance(current_config, types.GeneratorType):
-                print("XX")
-                pprint.pprint(prc)
-                pprint.pprint(list(current_config))
-                print("XX")
-                log.debug("Result of last call on ConfigProcessor is a Generator. Assuming this is an empty list, as otherwise I have no idea how to handle this. Sorry if this is causing trouble.")
-                current_config = None
+        context["current_config"] = current_config
+        context["last_call"] = True
+        self.process_single_config(current_config, self.processor_chain, callback, [], context)
 
-        if current_config:
-            if isinstance(current_config, types.GeneratorType):
-                log.debug("Result of last call to last ConfigProcessor in chain is of type Generator, not sure whether this should be valid or not, for now items are added to callback result, this might change in the future though.")
-                for c in current_config:
-                    if c:
-                        callback.callback(c)
-            else:
-                callback.callback(current_config)
 
         callback.finished()
 
@@ -1229,11 +1206,13 @@ class Frkl(object):
           context (dict): context object, can be used by processors to investigate current state, history, etc.
         """
 
-        if not config:
-            return
+        if not context.get("last_call", False):
+            if not config:
+                return
 
         if not processor_chain:
-            callback.callback(config)
+            if config:
+                callback.callback(config)
             return
 
         current_processor = processor_chain[0]
