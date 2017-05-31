@@ -57,6 +57,12 @@ DEFAULT_LEAFKEY_NAME = "default_leaf_key"
 OTHER_KEYS_NAME = "other_keys"
 KEY_MOVE_MAP_NAME = "key_move_map"
 
+START_VALUES_NAME = "init_values"
+
+ALL_FORMAT = '*'
+NONE_FORMAT = '-'
+PYTHON_FORMAT = 'PYTHON'
+STRING_FORMAT = 'STRING'
 
 FRKL_DEFAULT_PARAMS = {
         STEM_KEY_NAME: "childs",
@@ -307,6 +313,23 @@ class ConfigProcessor(object):
 
         return True
 
+
+    def get_input_format(self):
+        """Returns the format of the accepted input.
+
+        Defaults to 'STRING'
+        """
+
+        return STRING_FORMAT
+
+    def get_output_format(self):
+        """Returns the format of the output.
+
+        Defaults to the same as the 'get_input_format' method.
+        """
+
+        return self.get_input_format()
+
     def set_current_config(self, input_config, context):
         """Sets the current configuration.
 
@@ -316,6 +339,13 @@ class ConfigProcessor(object):
           input_config (object): current configuration to be processed
           context (dict): dict that describes the current context / processing state
         """
+
+        if isinstance(input_config, types.GeneratorType):
+            for c in input_config:
+                print(c)
+
+            print("ENDING")
+            sys.exit(0)
 
         self.current_input_config = input_config
         self.current_context = context
@@ -438,6 +468,10 @@ class EnsurePythonObjectProcessor(ConfigProcessor):
     """Makes sure the provided string is either valid yaml (or json -- not implemented yet), and converts it into a python object.
   """
 
+    def get_output_format(self):
+
+        return 'PYTHON'
+
     def process_current_config(self):
 
         config_obj = yaml.load(self.current_input_config)
@@ -448,10 +482,48 @@ class ToYamlProcessor(ConfigProcessor):
     """Takes a python object and returns the string representation.
     """
 
+    def get_input_format(self):
+
+        return PYTHON_FORMAT
+
+    def get_output_format(self):
+
+        return STRING_FORMAT
+
     def process_current_config(self):
 
         result = yaml.dump(self.current_input_config, default_flow_style=False)
         return result
+
+
+class IdProcessor(ConfigProcessor):
+    """Adds an id to every config item."""
+
+
+    def get_input_format(self):
+
+        return PYTHON_FORMAT
+
+
+    def validate_init(self):
+
+        self.id_type = self.init_params.get("id_type", "enumerate")
+        self.id_name = self.init_params.get("id_name", "id")
+        self.id_key = self.init_params.get("id_key", False)
+
+        if not self.id_key:
+            return "No 'id_key' value provided for IdProcessor"
+
+        self.current_id = 0
+
+        return True
+
+    def process_current_config(self):
+
+        self.current_input_config[self.id_key][self.id_name] = self.current_id
+        self.current_id = self.current_id + 1
+
+        return self.current_input_config
 
 class MergeProcessor(ConfigProcessor):
     """Gathers all configs and returns a list of all results as single element."""
@@ -460,6 +532,10 @@ class MergeProcessor(ConfigProcessor):
 
         super(MergeProcessor, self).__init__(init_params)
         self.configs = []
+
+    def get_input_format(self):
+
+        return ALL_FORMAT
 
     def new_config(self):
         if not self.last_call:
@@ -486,8 +562,11 @@ class FrklProcessor(ConfigProcessor):
 
         super(FrklProcessor, self).__init__(init_params)
 
-        self.values_so_far = {}
         self.configs = []
+
+    def get_input_format(self):
+
+        return PYTHON_FORMAT
 
     def validate_init(self):
 
@@ -541,6 +620,10 @@ class FrklProcessor(ConfigProcessor):
         elif self.use_context and  not isinstance(self.use_context, string_types):
             raise FrklConfigException("'use_context' keyword needs to be of type bool or string: {}".format(self.init_params))
 
+        if START_VALUES_NAME in self.init_params.keys():
+            self.values_so_far = self.init_params[START_VALUES_NAME]
+        else:
+            self.values_so_far = {}
 
         return True
 
@@ -559,7 +642,6 @@ class FrklProcessor(ConfigProcessor):
     def process_current_config(self):
 
         result = self.frklize(self.current_input_config, self.values_so_far)
-
         return result
 
 
@@ -670,6 +752,10 @@ class Jinja2TemplateProcessor(ConfigProcessor):
 
         super(Jinja2TemplateProcessor, self).__init__(init_params)
 
+    def get_input_format(self):
+
+        return STRING_FORMAT
+
     def validate_init(self):
 
         self.template_values = self.init_params.get("template_values", {})
@@ -717,6 +803,10 @@ class RegexProcessor(ConfigProcessor):
     def __init__(self, init_params={}):
         super(RegexProcessor, self).__init__(init_params)
 
+    def get_input_format(self):
+
+        return STRING_FORMAT
+
     def validate_init(self):
         self.regexes = self.init_params["regexes"]
         return True
@@ -740,6 +830,14 @@ class LoadMoreConfigsProcessor(ConfigProcessor):
     Use this with caution, since if this gets a list of string that is not a list of urls, it
     will still treat it like one and your run will fail.
     """
+
+    def get_input_format(self):
+
+        return PYTHON_FORMAT
+
+    def get_output_format(self):
+
+        return NONE_FORMAT
 
     def process_current_config(self):
 
@@ -766,6 +864,10 @@ class UrlAbbrevProcessor(ConfigProcessor):
       abbrevs (dict): custom abbreviations to use
       add_default_abbrevs (bool): whether to add the default abbreviations
     """
+
+    def get_input_format(self):
+
+        return STRING_FORMAT
 
     def validate_init(self):
 
@@ -1094,13 +1196,27 @@ class Frkl(object):
             context["current_processor"] = prc
             prc.set_current_config(current_config, context)
             current_config = prc.process()
+            if isinstance(current_config, types.GeneratorType):
+                print("XX")
+                pprint.pprint(prc)
+                pprint.pprint(list(current_config))
+                print("XX")
+                log.debug("Result of last call on ConfigProcessor is a Generator. Assuming this is an empty list, as otherwise I have no idea how to handle this. Sorry if this is causing trouble.")
+                current_config = None
 
         if current_config:
-            callback.callback(current_config)
+            if isinstance(current_config, types.GeneratorType):
+                log.debug("Result of last call to last ConfigProcessor in chain is of type Generator, not sure whether this should be valid or not, for now items are added to callback result, this might change in the future though.")
+                for c in current_config:
+                    if c:
+                        callback.callback(c)
+            else:
+                callback.callback(current_config)
 
         callback.finished()
 
         return callback.result()
+
 
     def process_single_config(self, config, processor_chain, callback, configs_copy, context):
         """Helper method to be able to recursively call the next processor in the chain.

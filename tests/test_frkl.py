@@ -298,6 +298,7 @@ def test_frkl_invalid_config(config):
     "simple_test3",
     "simple_test4",
     "simple_test5",
+    "simple_test6",
     "load_single_config_test",
     "load_multiple_configs_test",
     "download_multiple_configs_test",

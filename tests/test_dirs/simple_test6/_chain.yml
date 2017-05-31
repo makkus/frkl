@@ -1,0 +1,14 @@
+- expand_url
+- read
+- deserialize
+- frklize:
+    child_marker: childs
+    default_leaf: task
+    default_leaf_key: task_name
+    key_move_map:
+      '*': vars
+    init_values:
+      vars:
+        "x": 7
+        "y": 8
+        "z": 9

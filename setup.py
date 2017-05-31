@@ -11,6 +11,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'Click==6.7',
+    'click-log>=0.1.8',
     'six==1.10.0',
     'requests==2.13.0',
     'jinja2>=2.8.1',
@@ -47,7 +48,8 @@ setup(
             'regex=frkl:RegexProcessor',
             'load_additional_configs=frkl:LoadMoreConfigsProcessor',
             'to_yaml=frkl:ToYamlProcessor',
-            'merge=frkl:MergeProcessor'
+            'merge=frkl:MergeProcessor',
+            'id=frkl:IdProcessor'
         ]
     },
     include_package_data=True,
