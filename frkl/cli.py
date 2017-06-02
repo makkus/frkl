@@ -5,6 +5,7 @@ import pprint
 import sys
 
 import click
+import collections
 import yaml
 from six import string_types
 
@@ -24,7 +25,7 @@ class Config(object):
         if isinstance(configuration_dict, dict):
             self.config = configuration_dict
         elif isinstance(configuration_dict, string_types):
-            self.config
+            self.config = "XXX"
         else:
             raise Exception("frkl configuration needs to be created using a dict object")
 
@@ -55,9 +56,16 @@ def print_config(ctx, init, config):
 
     result = frkl_obj.process()
 
-    print("")
-    print("\n# ----------------------------------------\n".join((pprint.pformat(x) for x in result)))
-    print("")
+    if isinstance(result, collections.Iterable):
+
+        print("")
+        print("\n# ----------------------------------------\n".join((pprint.pformat(x) for x in result)))
+        print("")
+
+    else:
+        print("")
+        print(result)
+        print("")
 
 if __name__ == "__main__":
     cli()

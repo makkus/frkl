@@ -26,6 +26,7 @@ from six import string_types
 try:
     set
 except NameError:
+    # noinspection PyDeprecation
     from sets import Set as set
 
 try:
@@ -113,7 +114,6 @@ def dict_merge(dct, merge_dct, copy_dct=True):
     Args:
       dct (dict): dict onto which the merge is executed
       merge_dct (dict): dct merged into dct
-    Kwargs:
       copy_dct (bool): whether to (deep-)copy dct before merging (and leaving it unchanged), or not (default: copy)
 
     Returns:
@@ -173,7 +173,7 @@ def load_extension(name, init_params=None):
 # Frkl Exception(s)
 
 class FrklConfigException(Exception):
-    def __init__(self, message, errors=[]):
+    def __init__(self, message, errors=None):
         """Exception that is thrown when processing configuration urls/content.
 
         Args:
@@ -182,6 +182,8 @@ class FrklConfigException(Exception):
         """
 
         super(FrklConfigException, self).__init__(message)
+        if errors is None:
+            errors = []
         if isinstance(errors, Exception):
             self.errors = [errors]
         else:
@@ -292,13 +294,19 @@ class ConfigProcessor(object):
     In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be appbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
     """
 
-    def __init__(self, init_params={}):
+    def __init__(self, init_params=None):
         """
         Args:
           init_params (dict): arguments to initialize the processor
         """
 
+        if init_params is None:
+            init_params = {}
         self.init_params = init_params
+
+        self.current_input_config = None
+        self.current_context = None
+        self.last_call = False
 
         msg = self.validate_init()
         if not msg == True:
@@ -374,10 +382,6 @@ class ConfigProcessor(object):
 
         Calls the 'process_current_config' method internally
 
-        Args:
-          input_config (object): input configuration url or content
-          last_call (bool): whether this is the 'special' last round of processing
-
         Returns:
           object: processed config url or content
         """
@@ -405,10 +409,6 @@ class ConfigProcessor(object):
     @abc.abstractmethod
     def process_current_config(self):
         """Processes the config url or content.
-
-        Args:
-          input_config (object): input configuration url or content
-          last_call (bool): whether this is the 'special' last round of processing
 
         Returns:
           object: processed config url or content
@@ -496,6 +496,9 @@ class ToYamlProcessor(ConfigProcessor):
 class IdProcessor(ConfigProcessor):
     """Adds an id to every config item."""
 
+    def __init__(self, init_params=None):
+
+        super(IdProcessor, self).__init__(init_params)
 
     def get_input_format(self):
 
@@ -525,10 +528,9 @@ class IdProcessor(ConfigProcessor):
 class MergeProcessor(ConfigProcessor):
     """Gathers all configs and returns a list of all results as single element."""
 
-    def __init__(self, init_params={}):
+    def __init__(self, init_params=None):
 
         super(MergeProcessor, self).__init__(init_params)
-        self.configs = []
 
     def get_input_format(self):
 
@@ -555,10 +557,9 @@ class FrklProcessor(ConfigProcessor):
     page in the docs: link (XXX)
     """
 
-    def __init__(self, init_params={}):
+    def __init__(self, init_params=None):
 
         super(FrklProcessor, self).__init__(init_params)
-
         self.configs = []
 
     def get_input_format(self):
@@ -745,7 +746,7 @@ class Jinja2TemplateProcessor(ConfigProcessor):
         template_values (dict): a dictionary containing the values to replace template strings with
     """
 
-    def __init__(self, init_params={}):
+    def __init__(self, init_params=None):
 
         super(Jinja2TemplateProcessor, self).__init__(init_params)
 
@@ -797,7 +798,7 @@ class RegexProcessor(ConfigProcessor):
         regexes (dict): a map of regexes and their replacements
     """
 
-    def __init__(self, init_params={}):
+    def __init__(self, init_params=None):
         super(RegexProcessor, self).__init__(init_params)
 
     def get_input_format(self):
@@ -805,6 +806,7 @@ class RegexProcessor(ConfigProcessor):
         return STRING_FORMAT
 
     def validate_init(self):
+
         self.regexes = self.init_params["regexes"]
         return True
 
@@ -857,10 +859,10 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
     The default constructor without any arguments will create a processor only using the default, inbuilt abbreviations
 
-    Kwargs:
-      abbrevs (dict): custom abbreviations to use
-      add_default_abbrevs (bool): whether to add the default abbreviations
     """
+
+    def __init__(self, init_params=None):
+        super(UrlAbbrevProcessor, self).__init__(init_params)
 
     def get_input_format(self):
 
@@ -980,7 +982,7 @@ BOOTSTRAP_PROCESSOR_CHAIN = [
 
 class Frkl(object):
 
-    def init(files_or_folders, additional_configs=[], use_strings_as_config=False):
+    def init(files_or_folders, additional_configs=None, use_strings_as_config=False):
         """Creates a Frkl object.
 
         Args:
@@ -992,6 +994,8 @@ class Frkl(object):
           Frkl: the object
         """
 
+        if additional_configs is None:
+            additional_configs = []
         chain_files = []
         config_files = []
 
@@ -1037,8 +1041,8 @@ class Frkl(object):
         if not chain_files:
             raise FrklConfigException("No bootstrap information for Frkl found, can't create object.")
 
-        frkl = frkl.factory(chain_files, config_files)
-        return frkl
+        frkl_obj = Frkl.factory(chain_files, config_files)
+        return frkl_obj
     from_folder = staticmethod(from_folder)
 
 
@@ -1077,10 +1081,10 @@ class Frkl(object):
             all_chains.extend(chain_files)
             all_configs.extend(config_files)
 
-        return (chain_files, config_files)
+        return (all_chains, all_configs)
     get_configs = staticmethod(get_configs)
 
-    def factory(bootstrap_configs, frkl_configs=[]):
+    def factory(bootstrap_configs, frkl_configs=None):
         """Factory method to easily create a Frkl object using a list of configurations to describe
         the format of the configs to use later on, as well as (optionally) a list of such configs.
 
@@ -1092,6 +1096,8 @@ class Frkl(object):
           Frkl: a new Frkl object
         """
 
+        if frkl_configs is None:
+            frkl_configs = []
         if isinstance(bootstrap_configs, string_types):
             bootstrap_configs = [bootstrap_configs]
 
@@ -1103,7 +1109,7 @@ class Frkl(object):
 
     factory = staticmethod(factory)
 
-    def __init__(self, configs=[], processor_chain=DEFAULT_PROCESSOR_CHAIN):
+    def __init__(self, configs=None, processor_chain=DEFAULT_PROCESSOR_CHAIN):
         """Base object that holds the configuration.
 
         Args:
@@ -1117,6 +1123,8 @@ class Frkl(object):
           str: the final config url, all abbreviations replaced
         """
 
+        if configs is None:
+            configs = []
         if not isinstance(processor_chain, (list, tuple)):
             processor_chain = [processor_chain]
         self.processor_chain = processor_chain
@@ -1167,8 +1175,7 @@ class Frkl(object):
         idx = 0
 
         configs_copy = copy.deepcopy(self.configs)
-        context = {}
-        context["last_call"] = False
+        context = {"last_call": False}
 
         callback.started()
 
