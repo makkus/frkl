@@ -1,0 +1,11 @@
+collector: merge
+processor_chain:
+  - expand_url
+  - read
+  - deserialize
+  - frklize:
+      child_marker: childs
+      default_leaf: task
+      default_leaf_key: task_name
+      key_move_map:
+        '*': vars

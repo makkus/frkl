@@ -1,0 +1,19 @@
+- meta:
+    "type": "task1_type"
+  vars:
+    "a": 1
+    "b": 2
+    "c": 3
+    "aa": 11
+    "bb": 22
+  task:
+    "task_name": "task1"
+
+- vars:
+    "a": 1
+    "b": 2
+    "c": 3
+    "cc": 33
+    "dd": 44
+  task:
+    "task_name": "task2"

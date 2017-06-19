@@ -1,0 +1,26 @@
+- expand_url
+- read
+- deserialize
+- frklize:
+    child_marker: childs
+    default_leaf: task
+    default_leaf_key: task_name
+    key_move_map:
+      '*': vars
+- inject:
+    injection_dicts:
+      - task/task_name:
+          task1:
+            meta:
+              type: "task1_type"
+      - task/task_name:
+          task1:
+            vars:
+              "a": 9999
+              "c": 3
+          task2:
+            vars:
+              "c": 3
+
+    key_separator: "/"
+    merge_on_top: True
