@@ -8,6 +8,7 @@ import abc
 import collections
 import copy
 import logging
+import pprint
 import re
 import sys
 import types
@@ -134,7 +135,7 @@ def dict_merge(dct, merge_dct, copy_dct=True):
 # extensions
 # ------------------------------------------------------------------------
 def load_extension(name, init_params=None):
-    """Loading an extension.
+    """Loading a processor extension.
 
     Args:
       name (str): the registered name of the extension
@@ -167,6 +168,39 @@ def load_extension(name, init_params=None):
     return mgr
     # return {ext.name: ext.plugin() for ext in mgr.extensions}
 
+def load_collector(name, init_params=None):
+    """Loading a collector extension.
+    
+    Args:
+      name (str): the registered name of the collector
+      init_params (dict): the parameters to initialize the extension object
+      
+    Returns:
+      FrklCallback: the extension collector
+    """
+
+    if not init_params:
+        init_params = {}
+
+    log2 = logging.getLogger("stevedore")
+    out_hdlr = logging.StreamHandler(sys.stdout)
+    out_hdlr.setFormatter(logging.Formatter('PLUGIN ERROR -> %(message)s'))
+    out_hdlr.setLevel(logging.DEBUG)
+    log2.addHandler(out_hdlr)
+    log2.setLevel(logging.INFO)
+
+    log.debug("Loading extension...")
+
+    mgr = stevedore.driver.DriverManager(
+        namespace='frkl.collector',
+        name=name,
+        invoke_on_load=True,
+        invoke_args=(init_params,))
+    log.debug("Registered plugins: {}".format(", ".join(
+        ext.name for ext in mgr.extensions)))
+
+    return mgr
+
 
 # ------------------------------------------------------------------------
 # Frkl Exception(s)
@@ -190,7 +224,7 @@ class FrklConfigException(Exception):
 
 
 # ----------------------------------------------------------------
-# callbacks
+# callbacks / collectors
 @six.add_metaclass(abc.ABCMeta)
 class FrklCallback(object):
     """A class to slurp up configurations from the last element of a processor chain.
@@ -198,6 +232,84 @@ class FrklCallback(object):
     Since those processers might return Generators, it's handy to deal with the results of a config processing
     manually, callbacks seemed like a good way to do it.
     """
+
+    def init(init_file, configs):
+        """Creates a collector object with associated Frkl and processor chain.
+
+        The init file needs to be yaml, with the 'collector' key being a registered collector plugin,
+        and the 'processor_chain' key being a list of registered ConfigProcessor objects.
+
+        Args:
+          init_file: the path to the init file
+        Returns:
+          FrklCallback: the collector item
+        """
+
+        with open(init_file) as f:
+            content = f.read()
+
+        init_config = yaml.safe_load(content)
+
+        if isinstance(init_config, (list, tuple)):
+            processor_chain = init_config
+            collector_name = "default"
+        elif not isinstance(init_config, dict):
+            raise Exception("init configuration needs to be either list of processor configs, or dict with 'processor_chain' and optionally 'collector' keys")
+        else:
+            if not "processor_chain" in init_config.keys():
+                raise Exception("No processor chain specified in '{}'".format(init_file))
+
+            processor_chain = init_config["processor_chain"]
+            if not processor_chain:
+                raise Exception("Processor chain in '{}' empty".format(init_file))
+
+            if not "collector" in init_config.keys():
+                collector_name = "default"
+            else:
+                collector_name = init_config["collector"]
+
+        if isinstance(collector_name, string_types):
+            collector_init = {}
+        elif not isinstance(collector_name, dict) or len(collector_name) != 1:
+            raise Exception("'collector' value needs to be either a string or a dict with length 1")
+        else:
+            temp = collector_name
+            collector_name = list(temp.keys())[0]
+            collector_init = temp[collector_name]
+
+        if collector_name == 'default':
+            collector_name = 'merge'
+
+        collector = load_collector(collector_name, collector_init).driver
+
+        bootstrap = Frkl(processor_chain, COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
+        config_frkl = bootstrap.process(FrklFactoryCallback())
+
+        config_frkl.set_configs(configs)
+
+        temp = config_frkl.process(collector)
+        return collector
+    init = staticmethod(init)
+
+    def __init__(self, init_params=None):
+
+        if init_params == None:
+            init_params = {}
+        self.init_params = init_params
+
+        msg = self.validate_init()
+        if not msg == True:
+            raise FrklConfigException(msg)
+
+    def validate_init(self):
+        """Optional method that can be overwritten to process and validate input arguments for this processor.
+
+        Returns:
+          bool: whether validation succeeded or not
+        """
+
+        return True
+
 
     @abc.abstractmethod
     def callback(self, item):
@@ -235,7 +347,9 @@ class FrklCallback(object):
 class MergeResultCallback(FrklCallback):
     """Simple callback, just appends all configs to an internal list."""
 
-    def __init__(self):
+    def __init__(self, init_params=None):
+        super(MergeResultCallback, self).__init__(init_params)
+
         self.result_list = []
 
     def callback(self, process_result):
@@ -249,7 +363,8 @@ class ExtendResultCallback(FrklCallback):
     """Simple callback, extends an internal list with the processing results.
     """
 
-    def __init__(self):
+    def __init__(self, init_params=None):
+        super(ExtendResultCallback, self).__init__(init_params)
         self.result_list = []
 
     def callback(self, process_result):
@@ -263,7 +378,8 @@ class FrklFactoryCallback(FrklCallback):
     """Helper callback method, creates a new Frkl object by processing a list of processor init dicts.
     """
 
-    def __init__(self):
+    def __init__(self, init_params=None):
+        super(FrklFactoryCallback, self).__init__(init_params)
         self.processors = []
         self.bootstrap_chain = []
 
@@ -466,7 +582,7 @@ class EnsurePythonObjectProcessor(ConfigProcessor):
         return 'PYTHON'
 
     def process_current_config(self):
-        config_obj = yaml.load(self.current_input_config)
+        config_obj = yaml.safe_load(self.current_input_config)
         return config_obj
 
 
@@ -539,6 +655,63 @@ class MergeProcessor(ConfigProcessor):
         return True
 
 
+class DictInjectionProcessor(ConfigProcessor):
+    """A processor to 'inject' dictionaries and dictionary values into other dictionaries, according to predefined rules.
+    """
+
+    def __init__(self, init_params=None):
+
+        super(DictInjectionProcessor, self).__init__(init_params)
+
+    def validate_init(self):
+
+        self.injection_dicts = self.init_params['injection_dicts']
+        if isinstance(self.injection_dicts, dict):
+            self.injection_dicts = [self.injection_dicts]
+
+        self.on_top = self.init_params.get('merge_on_top', False)
+        self.separator = self.init_params.get('key_separator', '/')
+
+        return True
+
+    def get_input_format(self):
+
+        return PYTHON_FORMAT
+
+    def process_current_config(self):
+
+        config = self.current_input_config
+
+        result = None
+        for inj_dict in self.injection_dicts:
+
+            for key, value in inj_dict.items():
+
+                key_hierarchy = key.split(self.separator)
+                current_config = config
+                for part_key in key_hierarchy:
+
+                    if part_key in current_config.keys():
+                        current_config = current_config[part_key]
+                    else:
+                        current_config = None
+                        break
+
+                if not current_config or current_config not in value.keys():
+                    continue
+
+                merge_dict = inj_dict[key][current_config]
+
+                if self.on_top:
+                    result = dict_merge(config, merge_dict)
+                else:
+                    result = dict_merge(merge_dict, config)
+
+                config = result
+
+        return result
+
+
 class FrklProcessor(ConfigProcessor):
     """A processor to 'expand' python dictionaries using a pre-defined schema.
 
@@ -568,7 +741,7 @@ class FrklProcessor(ConfigProcessor):
                 tokens = self.default_leaf_key_map.split("/")
                 if not len(tokens) is 2:
                     raise FrklConfigException(
-                        "Default value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".fromat(
+                        "Default value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".format(
                             self.default_leaf_key_map))
                 self.default_leaf_key_map = {"*": (tokens[0], tokens[1])}
             else:
@@ -580,7 +753,7 @@ class FrklProcessor(ConfigProcessor):
                 if isinstance(value, (list, tuple)):
                     if not len(value) is 2:
                         raise FrklConfigException(
-                            "Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".fromat(
+                            "Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".format(
                                 value))
                     self.default_leaf_key_map[key] = value
                 else:
@@ -591,13 +764,15 @@ class FrklProcessor(ConfigProcessor):
 
                     if "/" in value:
                         tokens = value.split("/")
+
                         if not len(tokens) is 2:
                             raise FrklConfigException(
-                                "Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".fromat(
+                                "Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".format(
                                     value))
                         self.default_leaf_key_map[key] = (tokens[0], tokens[1])
                     else:
                         self.default_leaf_key_map[key] = (value, DEFAULT_LEAF_DEFAULT_KEY)
+
 
         else:
             return "Type '{}' not supported for move_key_map.".format(
@@ -672,7 +847,6 @@ class FrklProcessor(ConfigProcessor):
             # check whether any of the known keys is available here, if not,
             # we check whether ther is a default key registered for the name of the keys
             if not any(x in config.keys() for x in self.all_keys):
-
                 if not len(config) == 1:
                     raise FrklConfigException("This form of configuration is not implemented yet")
                 else:
@@ -707,7 +881,9 @@ class FrklProcessor(ConfigProcessor):
                             else:
                                 raise FrklConfigException(
                                     "Can't find default_leaf_key to move values of key '{}".format(key))
-                            new_value[migrate_key] = value
+
+                            new_value.setdefault(migrate_key, {}).update(value)
+                            new_value[migrate_key].update(value)
 
             else:
                 # check whether all keys are allowed
@@ -758,6 +934,7 @@ class Jinja2TemplateProcessor(ConfigProcessor):
         return STRING_FORMAT
 
     def validate_init(self):
+
 
         self.template_values = self.init_params.get("template_values", {})
         self.use_environment_vars = self.init_params.get("use_environment_vars", False)
@@ -979,9 +1156,13 @@ BOOTSTRAP_PROCESSOR_CHAIN = [
     UrlAbbrevProcessor(), EnsureUrlProcessor(), EnsurePythonObjectProcessor(),
     FrklProcessor(BOOTSTRAP_FRKL_FORMAT)
 ]
+COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN = [
+    FrklProcessor(BOOTSTRAP_FRKL_FORMAT)
+]
 
 
 class Frkl(object):
+
     def init(files_or_folders, additional_configs=None, use_strings_as_config=False):
         """Creates a Frkl object.
 
@@ -1116,14 +1297,8 @@ class Frkl(object):
 
         Args:
           configs (list): list of configurations, will be processed in the order they come in
-        Kwargs:
-          stem_key (str): the key that is used to travers a level up in the configuration, generating 'child' configs
-          other_valid_keys (list): list of keynames that are valid config 'holders'
           processor_chain (list): processor chain to use, defaults to [:class:`UrlAbbrevProcessor`]
-
-        Returns:
-          str: the final config url, all abbreviations replaced
-        """
+L        """
 
         if configs is None:
             configs = []
