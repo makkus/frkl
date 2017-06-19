@@ -1,22 +1,26 @@
 - env:
+   id: 0
    name: group_1
    type: group
   vars: 
    var_group_1_1: val1
    var_group_1_2: val2
 - env:
+   id: 1
    name: group_2
    type: group
   vars: 
    var_group_2_1: val1
    var_group_2_2: val2
 - env:
+   id: 2
    name: host_1
    type: host
   vars: 
    var_host_1_1: val_host_1_1
    var_host_1_2: val_host_1_2
 - env:
+   id: 3
    name: host_2
    type: host
   vars: 

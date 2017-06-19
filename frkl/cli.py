@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import collections
 import logging
 import pprint
 import sys
 
 import click
-import yaml
 from six import string_types
 
 from . import __version__ as VERSION
 from .frkl import Frkl
 
 log = logging.getLogger("frkl")
+
 
 class Config(object):
     """frkl configuration, holds things like aliases and such."""
@@ -24,7 +25,7 @@ class Config(object):
         if isinstance(configuration_dict, dict):
             self.config = configuration_dict
         elif isinstance(configuration_dict, string_types):
-            self.config
+            self.config = "XXX"
         else:
             raise Exception("frkl configuration needs to be created using a dict object")
 
@@ -43,11 +44,11 @@ def cli(ctx, version):
 
 
 @cli.command("print-config")
-@click.option('--init', '-i', multiple=True, help="config to bootstrap the frkl object itself, if not provided, config strings need to contain at least one folder with init information, refer to documentation for more info")
+@click.option('--init', '-i', multiple=True,
+              help="config to bootstrap the frkl object itself, if not provided, config strings need to contain at least one folder with init information, refer to documentation for more info")
 @click.argument('config', required=False, nargs=-1)
 @click.pass_context
 def print_config(ctx, init, config):
-
     if not init:
         frkl_obj = Frkl.init(config)
     else:
@@ -55,9 +56,17 @@ def print_config(ctx, init, config):
 
     result = frkl_obj.process()
 
-    print("")
-    print("\n# ----------------------------------------\n".join((pprint.pformat(x) for x in result)))
-    print("")
+    if isinstance(result, collections.Iterable):
+
+        print("")
+        print("\n# ----------------------------------------\n".join((pprint.pformat(x) for x in result)))
+        print("")
+
+    else:
+        print("")
+        print(result)
+        print("")
+
 
 if __name__ == "__main__":
     cli()
