@@ -299,6 +299,8 @@ def test_frkl_invalid_config(config):
     "simple_test4",
     "simple_test5",
     "simple_test6",
+    "simple_test7",
+    "simple_test8",
     "load_single_config_test",
     "load_multiple_configs_test",
     "download_multiple_configs_test",
@@ -330,3 +332,35 @@ def test_files(test_name):
     pprint.pprint(result_obj)
 
     assert expected_obj == result_obj
+
+@pytest.mark.parametrize("test_name", [
+    "collector_1",
+    "collector_2",
+    "collector_3"
+])
+def test_collector_init(test_name):
+
+    folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
+
+    input_files = []
+    for child in os.listdir(folder):
+        if not child.startswith("_"):
+            input_files.append(os.path.join(folder, child))
+    input_files.sort()
+
+    result_file = os.path.join(folder, "__result.yml")
+
+    with open(result_file) as f:
+        content = f.read()
+
+    expected_obj = yaml.load(content)
+
+    init_file = os.path.join(folder, "_init.yml")
+    result_obj = FrklCallback.init(init_file, input_files)
+    result = result_obj.result()
+
+    pprint.pprint(expected_obj)
+    print("XXX")
+    pprint.pprint(result)
+
+    assert expected_obj == result

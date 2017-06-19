@@ -49,7 +49,11 @@ setup(
             'load_additional_configs=frkl:LoadMoreConfigsProcessor',
             'to_yaml=frkl:ToYamlProcessor',
             'merge=frkl:MergeProcessor',
-            'id=frkl:IdProcessor'
+            'id=frkl:IdProcessor',
+            'inject=frkl:DictInjectionProcessor'
+        ],
+        'frkl.collector': [
+            'merge=frkl:MergeResultCallback'
         ]
     },
     include_package_data=True,
