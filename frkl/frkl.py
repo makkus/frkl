@@ -8,18 +8,19 @@ import abc
 import collections
 import copy
 import logging
+import os
 import pprint
 import re
 import sys
 import types
 
-import os
 import requests
 import six
 import stevedore
-import yaml
 from jinja2 import BaseLoader, Environment
 from six import string_types
+
+import yaml
 
 try:
     set
@@ -78,8 +79,8 @@ RECURSIVE_LOAD_INDICATOR = "-67323"
 # abbreviations used by the UrlAbbrevProcessor class
 DEFAULT_ABBREVIATIONS = {
     'gh':
-        ["https://raw.githubusercontent.com", PLACEHOLDER, PLACEHOLDER, "master"],
-    'bb': ["https://bitbucket.org", PLACEHOLDER, PLACEHOLDER, "src", "master"]
+        ["https://raw.githubusercontent.com", "/", PLACEHOLDER, "/", PLACEHOLDER, "/", "master", "/"],
+    'bb': ["https://bitbucket.org", "/", PLACEHOLDER, "/", PLACEHOLDER, "/", "src", "/", "master", "/"]
 }
 
 
@@ -1127,7 +1128,6 @@ class UrlAbbrevProcessor(ConfigProcessor):
                         to_append = t
 
                     result_string += to_append
-                    result_string += "/"
 
                 if tokens:
                     postfix = "/".join(tokens)

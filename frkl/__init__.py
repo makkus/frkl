@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from .frkl import (ConfigProcessor, EnsurePythonObjectProcessor, EnsureUrlProcessor,
-                   FrklProcessor, Jinja2TemplateProcessor,
-                   LoadMoreConfigsProcessor, MergeProcessor, RegexProcessor, IdProcessor, DictInjectionProcessor,
-                   ToYamlProcessor, UrlAbbrevProcessor, Frkl,
-                   CHILD_MARKER_NAME, DEFAULT_LEAF_NAME, DEFAULT_LEAFKEY_NAME,
-                   OTHER_KEYS_NAME, START_VALUES_NAME, KEY_MOVE_MAP_NAME, FrklCallback, DEFAULT_LEAF_DEFAULT_KEY, dict_merge, MergeResultCallback)
+from .frkl import (CHILD_MARKER_NAME, DEFAULT_LEAF_DEFAULT_KEY,
+                   DEFAULT_LEAF_NAME, DEFAULT_LEAFKEY_NAME, KEY_MOVE_MAP_NAME,
+                   OTHER_KEYS_NAME, PLACEHOLDER, START_VALUES_NAME,
+                   ConfigProcessor, DictInjectionProcessor,
+                   EnsurePythonObjectProcessor, EnsureUrlProcessor, Frkl,
+                   FrklCallback, FrklProcessor, IdProcessor,
+                   Jinja2TemplateProcessor, LoadMoreConfigsProcessor,
+                   MergeProcessor, MergeResultCallback, RegexProcessor,
+                   ToYamlProcessor, UrlAbbrevProcessor, dict_merge)
 
 __author__ = """Markus Binsteiner"""
 __email__ = 'makkus@posteo.de'

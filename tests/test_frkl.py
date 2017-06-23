@@ -16,8 +16,8 @@ import unittest
 from contextlib import contextmanager
 
 import pytest
-import yaml
 
+import yaml
 from frkl import cli, frkl
 from frkl.frkl import *
 
@@ -305,7 +305,8 @@ def test_frkl_invalid_config(config):
     "load_multiple_configs_test",
     "download_multiple_configs_test",
     "jinja_test",
-    "jinja_test_2"
+    "jinja_test_2",
+    "two_input_files_1"
 ])
 def test_files(test_name):
 
