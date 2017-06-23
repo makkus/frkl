@@ -24,7 +24,7 @@ test_requirements = [
 
 setup(
     name='frkl',
-    version='0.1.0',
+    version='0.1.1',
     description="Elastic configuration files",
     long_description=readme + '\n\n' + history,
     author="Markus Binsteiner",
