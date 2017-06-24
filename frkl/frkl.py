@@ -13,10 +13,12 @@ import pprint
 import re
 import sys
 import types
+from builtins import *
 
 import requests
 import six
 import stevedore
+from future.builtins.disabled import *
 from jinja2 import BaseLoader, Environment
 from six import string_types
 
