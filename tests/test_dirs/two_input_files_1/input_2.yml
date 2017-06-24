@@ -1,0 +1,9 @@
+childs:
+  - task1:
+      vars:
+        "aa": 11
+        "bb": 22
+  - task2:
+      "cc": 33
+      "dd": 44
+
