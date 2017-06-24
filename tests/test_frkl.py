@@ -18,7 +18,6 @@ from contextlib import contextmanager
 import pytest
 
 import yaml
-from frkl import cli, frkl
 from frkl.frkl import *
 
 #from click.testing import CliRunner
@@ -151,8 +150,8 @@ TEST_ENSURE_FAIL_URLS = [("/tmp_does_not_exist/234234234"), (
     "https://raw222.githubusercontent.com/xxxxxxx8888/asdf.yml")]
 
 TEST_PROCESSOR_CHAIN_1 = [
-    frkl.RegexProcessor({"regexes": TEST_REGEXES}),
-    frkl.UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})
+    RegexProcessor({"regexes": TEST_REGEXES}),
+    UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})
 ]
 TEST_CHAIN_1_URLS = [(["gh:makkus/freckles/examples/quickstart.yml"], [
     "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"
@@ -162,15 +161,15 @@ TEST_CHAIN_1_URLS = [(["gh:makkus/freckles/examples/quickstart.yml"], [
     "https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"
 ])]
 
-REGEX_CHAIN = [frkl.RegexProcessor({"regexes": TEST_REGEXES})]
+REGEX_CHAIN = [RegexProcessor({"regexes": TEST_REGEXES})]
 JINJA_CHAIN = [
-    frkl.EnsureUrlProcessor(), frkl.Jinja2TemplateProcessor(
+    EnsureUrlProcessor(), Jinja2TemplateProcessor(
         {"template_values": TEST_JINJA_DICT})
 ]
-ABBREV_CHAIN = [frkl.UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})]
-ENSURE_URL_CHAIN = [frkl.EnsureUrlProcessor()]
+ABBREV_CHAIN = [UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})]
+ENSURE_URL_CHAIN = [EnsureUrlProcessor()]
 ENSURE_PYTHON_CHAIN = [
-    frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor()
+    EnsureUrlProcessor(), EnsurePythonObjectProcessor()
 ]
 
 FRKL_INIT_PARAMS = {
@@ -180,12 +179,12 @@ FRKL_INIT_PARAMS = {
         DEFAULT_LEAF_KEY_MAP_NAME: "vars"
     }
 FRKLIZE_CHAIN = [
-    frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(),
-    frkl.LoadMoreConfigsProcessor(), frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    EnsureUrlProcessor(), EnsurePythonObjectProcessor(),
+    LoadMoreConfigsProcessor(), FrklProcessor(FRKL_INIT_PARAMS)
 ]
 ABBREV_FRKLIZE_CHAIN = [
-    frkl.UrlAbbrevProcessor(), frkl.EnsureUrlProcessor(), frkl.EnsurePythonObjectProcessor(), frkl.LoadMoreConfigsProcessor(),
-    frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    UrlAbbrevProcessor(), EnsureUrlProcessor(), EnsurePythonObjectProcessor(), LoadMoreConfigsProcessor(),
+    FrklProcessor(FRKL_INIT_PARAMS)
 ]
 
 PROCESSOR_TESTS = [
@@ -225,14 +224,14 @@ PROCESSOR_TESTS = [
 ])
 def test_list_of_strings(input_obj, expected):
 
-    assert frkl.is_list_of_strings(input_obj) == expected
+    assert is_list_of_strings(input_obj) == expected
 
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):
 
     dict1_orig = copy.deepcopy(dict1)
     dict2_orig = copy.deepcopy(dict2)
-    merged = frkl.dict_merge(dict1, dict2, True)
+    merged = dict_merge(dict1, dict2, True)
     assert merged == expected
     assert dict1 == dict1_orig
     assert dict2 == dict2_orig
@@ -243,7 +242,7 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
 
     dict1_orig = copy.deepcopy(dict1)
     dict2_orig = copy.deepcopy(dict2)
-    merged = frkl.dict_merge(dict1, dict2, False)
+    merged = dict_merge(dict1, dict2, False)
     assert merged == expected
     assert dict1 == expected
     assert dict2 == dict2_orig
@@ -252,7 +251,7 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
 @pytest.mark.parametrize("processor, input_config, context_key, expected", PROCESSOR_TESTS)
 def test_processor(processor, input_config, context_key, expected):
 
-    frkl_obj = frkl.Frkl(input_config, processor_chain=processor)
+    frkl_obj = Frkl(input_config, processor_chain=processor)
     result = frkl_obj.process()
 
     pprint.pprint(result)
@@ -265,9 +264,9 @@ def test_processor(processor, input_config, context_key, expected):
 @pytest.mark.parametrize("input_url", TEST_ENSURE_FAIL_URLS)
 def test_ensure_fail_url_processor(input_url):
 
-    prc = frkl.EnsureUrlProcessor()
+    prc = EnsureUrlProcessor()
     prc.set_current_config(input_url, {"last_call": False})
-    with pytest.raises(frkl.FrklConfigException):
+    with pytest.raises(FrklConfigException):
         prc.process()
 
 @pytest.mark.parametrize("config, expected", [
@@ -275,7 +274,7 @@ def test_ensure_fail_url_processor(input_url):
 ])
 def test_frkl_valid_config(config, expected):
 
-    frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    frkl_obj = FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config, {"last_call": False})
     frkl_obj.process()
 
@@ -285,9 +284,9 @@ def test_frkl_valid_config(config, expected):
 ])
 def test_frkl_invalid_config(config):
 
-    frkl_obj = frkl.FrklProcessor(FRKL_INIT_PARAMS)
+    frkl_obj = FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config, {"last_call": False})
-    with pytest.raises(frkl.FrklConfigException):
+    with pytest.raises(FrklConfigException):
         for i in frkl_obj.process():
             print(i)
 
@@ -325,7 +324,7 @@ def test_files(test_name):
 
     expected_obj = yaml.load(content)
 
-    frkl_obj = frkl.Frkl.factory(chain_file, input_files)
+    frkl_obj = Frkl.factory(chain_file, input_files)
     result_obj = frkl_obj.process()
 
     pprint.pprint(expected_obj)

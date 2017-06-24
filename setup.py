@@ -40,20 +40,20 @@ setup(
             'frkl=frkl.cli:cli'
         ],
         'frkl.frk': [
-            'expand_url=frkl:UrlAbbrevProcessor',
-            'read=frkl:EnsureUrlProcessor',
-            'deserialize=frkl:EnsurePythonObjectProcessor',
-            'frklize=frkl:FrklProcessor',
-            'render_template=frkl:Jinja2TemplateProcessor',
-            'regex=frkl:RegexProcessor',
-            'load_additional_configs=frkl:LoadMoreConfigsProcessor',
-            'to_yaml=frkl:ToYamlProcessor',
-            'merge=frkl:MergeProcessor',
-            'id=frkl:IdProcessor',
-            'inject=frkl:DictInjectionProcessor'
+            'expand_url=frkl.frkl:UrlAbbrevProcessor',
+            'read=frkl.frkl:EnsureUrlProcessor',
+            'deserialize=frkl.frkl:EnsurePythonObjectProcessor',
+            'frklize=frkl.frkl:FrklProcessor',
+            'render_template=frkl.frkl:Jinja2TemplateProcessor',
+            'regex=frkl.frkl:RegexProcessor',
+            'load_additional_configs=frkl.frkl:LoadMoreConfigsProcessor',
+            'to_yaml=frkl.frkl:ToYamlProcessor',
+            'merge=frkl.frkl:MergeProcessor',
+            'id=frkl.frkl:IdProcessor',
+            'inject=frkl.frkl:DictInjectionProcessor'
         ],
         'frkl.collector': [
-            'merge=frkl:MergeResultCallback'
+            'merge=frkl.frkl:MergeResultCallback'
         ]
     },
     include_package_data=True,
