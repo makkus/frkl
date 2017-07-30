@@ -51,7 +51,8 @@ setup(
             'to_yaml=frkl.frkl:ToYamlProcessor',
             'merge=frkl.frkl:MergeProcessor',
             'id=frkl.frkl:IdProcessor',
-            'inject=frkl.frkl:DictInjectionProcessor'
+            'inject=frkl.frkl:DictInjectionProcessor',
+            'split=frkl.frkl:YamlTextSplitProcessor'
         ],
         'frkl.collector': [
             'merge=frkl.frkl:MergeResultCallback'

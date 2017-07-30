@@ -347,6 +347,21 @@ class FrklCallback(object):
         pass
 
 
+class MergeDictResultCallback(FrklCallback):
+    """Simple callback, merges all configs to *one* internal dict."""
+
+    def __init__(self, init_params=None):
+        super(MergeDictResultCallback, self).__init__(init_params)
+
+        self.result_dict = {}
+
+    def callback(self, process_result):
+        dict_merge(self.result_dict, process_result, copy_dct=False)
+
+    def result(self):
+        return self.result_dict
+
+
 class MergeResultCallback(FrklCallback):
     """Simple callback, just appends all configs to an internal list."""
 
@@ -850,8 +865,9 @@ class FrklProcessor(ConfigProcessor):
             # check whether any of the known keys is available here, if not,
             # we check whether ther is a default key registered for the name of the keys
             if not any(x in config.keys() for x in self.all_keys):
+
                 if not len(config) == 1:
-                    raise FrklConfigException("This form of configuration is not implemented yet")
+                    raise FrklConfigException("This form of configuration is not implemented yet: {} -- current vars: {}".format(config, current_vars))
                 else:
                     key = next(iter(config))
                     value = config[key]
@@ -912,9 +928,15 @@ class FrklProcessor(ConfigProcessor):
             new_value = copy.deepcopy(current_vars)
 
             if stem_branch == NO_STEM_INDICATOR:
-                if self.default_leaf_key in new_value.keys() and self.default_leaf_default_key in new_value[
-                    self.default_leaf_key].keys():
+                # TODO: double check logic here
+                # if self.default_leaf_key in new_value.keys() and self.default_leaf_default_key in new_value[self.default_leaf_key].keys():
+                if self.default_leaf_key in new_value.keys():
                     yield new_value
+                # else:
+                    # dict_merge(current_vars, new_value, copy_dct=False)
+                    # print(self.values_so_far)
+                    # print("YYYYYYYYYYXXXXXXXXX")
+
             else:
                 for item in self.frklize(stem_branch, copy.deepcopy(current_vars)):
                     yield item
@@ -969,10 +991,46 @@ class Jinja2TemplateProcessor(ConfigProcessor):
             dict_merge(env, frkl_vars, copy_dct=False)
 
         dict_merge(env, self.template_values, copy_dct=False)
-
         config_string = rtemplate.render(env)
 
         return config_string
+
+
+class YamlTextSplitProcessor(ConfigProcessor):
+    """Splits a string if it can find certain keywords at the beginning of a line.
+
+    Args:
+        keywords (list): a list of keywords
+    """
+
+    def __init(self, init_params=None):
+        super(YamlTextSplitProcessor, self).__init__(init_params)
+
+    def get_input_format(self):
+        return STRING_FORMAT
+
+    def validate_init(self):
+        self.keywords = self.init_params["keywords"]
+        self.current_lines = []
+        return True
+
+    def process_current_config(self):
+
+        if self.last_call:
+            if self.current_lines:
+                yield "\n".join(self.current_lines)
+        else:
+            new_config = self.current_input_config
+
+            for line in new_config.splitlines():
+                if self.current_lines and any(line.startswith(keyword) for keyword in self.keywords):
+                    yield "\n".join(self.current_lines)
+                    self.current_lines = [line]
+                else:
+                    self.current_lines.append(line)
+
+    def handles_last_call(self):
+        return True
 
 
 class RegexProcessor(ConfigProcessor):

@@ -1,0 +1,16 @@
+- expand_url
+- read
+- split:
+    keywords:
+      - vars
+      - childs
+- render_template:
+    use_context: True
+- deserialize
+- frklize:
+    use_context: True
+    child_marker: childs
+    default_leaf: task
+    default_leaf_key: task_name
+    key_move_map:
+      '*': vars

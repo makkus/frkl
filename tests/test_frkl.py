@@ -300,6 +300,9 @@ def test_frkl_invalid_config(config):
     "simple_test6",
     "simple_test7",
     "simple_test8",
+    # "simple_test9",
+    # "simple_test10",
+    "simple_test11",
     "load_single_config_test",
     "load_multiple_configs_test",
     "download_multiple_configs_test",
@@ -327,8 +330,8 @@ def test_files(test_name):
     frkl_obj = Frkl.factory(chain_file, input_files)
     result_obj = frkl_obj.process()
 
-    pprint.pprint(expected_obj)
-    print("XXX")
+    # pprint.pprint(expected_obj)
+    # print("XXX")
     pprint.pprint(result_obj)
 
     assert expected_obj == result_obj

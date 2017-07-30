@@ -1,0 +1,8 @@
+- vars:
+    pkg_mgr: conda
+    packages:
+      - pandoc
+# childs:
+  # vars:
+    # packages:
+     # - emacs

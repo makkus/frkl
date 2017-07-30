@@ -1,0 +1,16 @@
+vars:
+  "a": 1
+  "b": 2
+  "aa_replacement": 11
+childs:
+  - vars:
+      "aa": {{ vars.aa_replacement }}
+      "bb": 22
+    childs:
+     - task:
+        "task_name": "task1"
+  - vars:
+      "cc": {{ vars.aa_replacement }}
+      "dd": 44
+    task:
+      "task_name": "task2"

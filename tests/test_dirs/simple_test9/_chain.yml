@@ -1,0 +1,9 @@
+- expand_url
+- read
+- deserialize
+- frklize:
+    child_marker: childs
+    default_leaf: vars
+    default_leaf_key: name
+    key_move_map:
+      '*': vars

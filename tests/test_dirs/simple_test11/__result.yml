@@ -1,0 +1,17 @@
+- vars:
+    "a": 1
+    "b": 2
+    "aa": 11
+    "bb": 22
+    "aa_replacement": 11
+  task:
+    "task_name": "task1"
+
+- vars:
+    "a": 1
+    "b": 2
+    "cc": 11
+    "dd": 44
+    "aa_replacement": 11
+  task:
+    "task_name": "task2"
