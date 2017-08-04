@@ -10,13 +10,13 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'Click==6.7',
+    'Click>=6.7',
     'click-log>=0.1.8',
-    'six==1.10.0',
-    'requests==2.13.0',
+    'six>=1.10.0',
+    'requests>=2.13.0',
     'jinja2>=2.8.1',
-    'stevedore==1.18.0',
-    'future==0.16.0'
+    'stevedore>=1.18.0',
+    'future>=0.16.0'
 ]
 
 test_requirements = [
