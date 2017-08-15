@@ -16,9 +16,9 @@ import unittest
 from contextlib import contextmanager
 
 import pytest
+from frkl.frkl import *
 
 import yaml
-from frkl.frkl import *
 
 #from click.testing import CliRunner
 
@@ -335,6 +335,37 @@ def test_files(test_name):
     pprint.pprint(result_obj)
 
     assert expected_obj == result_obj
+
+@pytest.mark.parametrize("test_name", [
+    "simple_test12"
+])
+def test_files_collector(test_name):
+
+    folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
+    chain_file = os.path.join(folder, "_chain.yml")
+    input_files = []
+    for child in os.listdir(folder):
+        if not child.startswith("_"):
+            input_files.append(os.path.join(folder, child))
+    input_files.sort()
+    pprint.pprint(input_files)
+    result_file = os.path.join(folder, "__result.yml")
+
+    with open(result_file) as f:
+        content = f.read()
+
+    expected_obj = yaml.load(content)
+
+    frkl_obj = Frkl.factory(chain_file, input_files)
+    test12_init = {"append_keys": "vars/a"}
+    result_obj = frkl_obj.process(MergeDictResultCallback(test12_init))
+
+    # pprint.pprint(expected_obj)
+    # print("XXX")
+    pprint.pprint(result_obj)
+
+    assert expected_obj == result_obj
+
 
 @pytest.mark.parametrize("test_name", [
     "collector_1",
