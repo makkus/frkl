@@ -301,7 +301,7 @@ class FrklCallback(object):
         self.init_params = init_params
 
         msg = self.validate_init()
-        if not msg == True:
+        if msg is not True:
             raise FrklConfigException(msg)
 
     def validate_init(self):
@@ -352,13 +352,59 @@ class MergeDictResultCallback(FrklCallback):
 
     def __init__(self, init_params=None):
         super(MergeDictResultCallback, self).__init__(init_params)
-
         self.result_dict = {}
+        self.append_keys_map = {}
+
+    def validate_init(self):
+        """Optional method that can be overwritten to process and validate input arguments for this processor.
+
+        Returns:
+          bool: whether validation succeeded or not
+        """
+
+        self.append_keys = self.init_params.get("append_keys", [])
+        if not isinstance(self.append_keys, (list, tuple)):
+            self.append_keys = [self.append_keys]
+
+        return True
+
+    def get_dict_detail(self, target_dict, detail_path):
+
+        if not target_dict:
+            return default_value
+        temp = target_dict
+        for level in detail_path.split("/"):
+            temp = temp.get(level, {})
+
+        return temp
+
+    def set_dict_detail(self, target_dict, detail_path, new_value):
+
+        temp = target_dict
+        tokens = detail_path.split("/")
+        for level in tokens[0:-1]:
+            if level not in temp.keys():
+                temp[level] = {}
+            temp = temp[level]
+
+        temp[tokens[-1]] = new_value
 
     def callback(self, process_result):
+
+        for ak in self.append_keys:
+            v = self.get_dict_detail(process_result, ak)
+            if v:
+                if not isinstance(v, (list, tuple)):
+                    v = [v]
+                self.append_keys_map.setdefault(ak, []).extend(v)
+
         dict_merge(self.result_dict, process_result, copy_dct=False)
 
     def result(self):
+
+        for k, v in self.append_keys_map.items():
+            self.set_dict_detail(self.result_dict, k, v)
+
         return self.result_dict
 
 
