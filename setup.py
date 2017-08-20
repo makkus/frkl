@@ -15,7 +15,7 @@ requirements = [
     'six>=1.10.0',
     'requests>=2.13.0',
     'jinja2>=2.8.1',
-    'stevedore>=1.18.0',
+    'stevedore>=1.25.0',
     'future>=0.16.0'
 ]
 
