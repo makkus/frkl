@@ -5,6 +5,7 @@ notifications:
       - makkus@frkl.io
     on_success: never # default: change
     on_failure: always # default: always
+
 deploy:
   true:
     condition: $TOXENV == py27
@@ -15,13 +16,19 @@ deploy:
     secure: K7BE+2JC+VUh17a9m5+VBUlXNs2zRcIWh7crbWHvSjrveF57d/UPabGUMN+4qD8GHoWuPTTM6bOIAtZjOM+tgLCvECiEl+BusPuCJHcftHZFWeh58tKkVAnjlsz8azpifSKWOprx9B2IwfnNWxkCL18quMLukZhtckarIPjeq8Di7lqorIVLmZLJMPLpMrtDKrENBpK/j+id+n7MjnKrthX1IpD1IjXizCBY/Qsxly896iXD7oL1pORoKOWCmWQGZVkKQzuHUwN69fyAUodTwYiw5ZDqiYlr4iinnvvZzPCHcfkR3q987k3t4JAQmFH/kZG03wRT+7UYjTisVNvayxPMsRimIzKPQMwzdLmCGaPojQDgoh6DyG+gPNS71jNkqi8TFbw1aH0IPOkqAPbCDUozbORk9AK8CoyL9AI6Q/UH+5e7GEB5Fywh9630r+R7YVG2qeeRmBUVNNWpXsbliYYLK3AQBodMOYitKFYbxJA7SxvI1OBQA3EEhjgh99HnaSODGFK14PCSQY/ESANUCCr6UbjUOT/+s1xj75ZaliJlXC/djzX3QueEhKd6Qdl4wRQuEKnOgjr4+ldBhw/uuGZHPn1WWn4yKme46F9r2kEUlQBv6+05ZU+htSX9ZKJBlLTRMRwVTgQm9q0Q7Sy4BYQ85zoEBdAtkSsog+56jFM=
   provider: pypi
   user: makkus
-env:
-- TOXENV=py35
-- TOXENV=py34
-- TOXENV=py33
-- TOXENV=py27
-#- TOXENV=pypy
+
 install: pip install -U tox
 language: python
-python: 3.5
+
+matrix:
+    include:
+        - python: 3.6
+          env: TOXENV=py36
+        - python: 3.5
+          env: TOXENV=py35
+        - python: 3.4
+          env: TOXENV=py34
+        - python: 2.7
+          env: TOXENV=py27
+
 script: tox -e ${TOXENV}
