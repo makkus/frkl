@@ -242,6 +242,7 @@ class FrklCallback(object):
 
         Args:
           init_file: the path to the init file
+          configs: the configuration item(s) for this processor
         Returns:
           FrklCallback: the collector item
         """
@@ -258,14 +259,14 @@ class FrklCallback(object):
             raise Exception(
                 "init configuration needs to be either list of processor configs, or dict with 'processor_chain' and optionally 'collector' keys")
         else:
-            if not "processor_chain" in init_config.keys():
+            if "processor_chain" not in init_config.keys():
                 raise Exception("No processor chain specified in '{}'".format(init_file))
 
             processor_chain = init_config["processor_chain"]
             if not processor_chain:
                 raise Exception("Processor chain in '{}' empty".format(init_file))
 
-            if not "collector" in init_config.keys():
+            if "collector" not in init_config.keys():
                 collector_name = "default"
             else:
                 collector_name = init_config["collector"]
@@ -296,7 +297,7 @@ class FrklCallback(object):
 
     def __init__(self, init_params=None):
 
-        if init_params == None:
+        if init_params is None:
             init_params = {}
         self.init_params = init_params
 
@@ -470,7 +471,7 @@ class FrklFactoryCallback(FrklCallback):
 class ConfigProcessor(object):
     """Abstract base class for config url/content manipulators.
 
-    In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be appbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
+    In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be abbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
     """
 
     def __init__(self, init_params=None):
@@ -488,7 +489,7 @@ class ConfigProcessor(object):
         self.last_call = False
 
         msg = self.validate_init()
-        if not msg == True:
+        if msg is not True:
             raise FrklConfigException(msg)
 
     def validate_init(self):
@@ -574,7 +575,7 @@ class ConfigProcessor(object):
     def handles_last_call(self):
         """Returns whether this processor wants to be called at the end of a processing run again.
 
-        If the preceiding processer returns a non-None value, this is ignored and the processor is called anyway.
+        If the preceding processor returns a non-None value, this is ignored and the processor is called anyway.
 
         Returns:
           bool: whether to call this processor for the 'special' last run
@@ -626,8 +627,7 @@ class EnsureUrlProcessor(ConfigProcessor):
                         config_file_url), e)
         else:
             raise FrklConfigException(
-                "Not a supported config file url or no local file found: {}".
-                    format(config_file_url))
+                "Not a supported config file url or no local file found: {}".format(config_file_url))
 
         return content
 
@@ -804,7 +804,7 @@ class FrklProcessor(ConfigProcessor):
                 tokens = self.default_leaf_key_map.split("/")
                 if not len(tokens) is 2:
                     raise FrklConfigException(
-                        "Default value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".format(
+                        "Default value for move_key_map can't be parsed as it has more than 2 parts (separated by '/': {})".format(
                             self.default_leaf_key_map))
                 self.default_leaf_key_map = {"*": (tokens[0], tokens[1])}
             else:
@@ -816,7 +816,7 @@ class FrklProcessor(ConfigProcessor):
                 if isinstance(value, (list, tuple)):
                     if not len(value) is 2:
                         raise FrklConfigException(
-                            "Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".format(
+                            "Value for move_key_map can't be parsed as it has more than 2 parts (separated by '/': {})".format(
                                 value))
                     self.default_leaf_key_map[key] = value
                 else:
@@ -830,12 +830,11 @@ class FrklProcessor(ConfigProcessor):
 
                         if not len(tokens) is 2:
                             raise FrklConfigException(
-                                "Value for move_key_map can't be parsed as it has more than 2 parts (seperated by '/': {})".format(
+                                "Value for move_key_map can't be parsed as it has more than 2 parts (separated by '/': {})".format(
                                     value))
                         self.default_leaf_key_map[key] = (tokens[0], tokens[1])
                     else:
                         self.default_leaf_key_map[key] = (value, DEFAULT_LEAF_DEFAULT_KEY)
-
 
         else:
             return "Type '{}' not supported for move_key_map.".format(
@@ -878,7 +877,7 @@ class FrklProcessor(ConfigProcessor):
         return result
 
     def frklize(self, config, current_vars):
-        """Recursivly called function which generates (expands) and yields dictionaries matching
+        """Recursively called function which generates (expands) and yields dictionaries matching
         certain criteria (containing leaf_node keys, for example).
 
         Args:
@@ -886,7 +885,7 @@ class FrklProcessor(ConfigProcessor):
           current_vars (dict): current state of the (overlayed) var cache
         """
 
-        # mkaing sure the new value is a dict, with only allowed keys
+        # making sure the new value is a dict, with only allowed keys
         if isinstance(config, string_types):
             config = {
                 self.default_leaf_key: {
@@ -908,7 +907,7 @@ class FrklProcessor(ConfigProcessor):
             new_value = {}
 
             # check whether any of the known keys is available here, if not,
-            # we check whether ther is a default key registered for the name of the keys
+            # we check whether there is a default key registered for the name of the keys
             if not any(x in config.keys() for x in self.all_keys):
 
                 if not len(config) == 1:
@@ -954,13 +953,12 @@ class FrklProcessor(ConfigProcessor):
             else:
                 # check whether all keys are allowed
                 for key in config.keys():
-                    if not key in self.all_keys:
+                    if key not in self.all_keys:
                         raise FrklConfigException(
                             "Key '{}' not allowed, since it is an unknown keys amongst known keys in config: {}".format(
                                 key, config))
 
                 new_value = config
-
 
                 # if self.stem_key in new_value.keys() and self.default_leaf_key in new_value.keys():
                 # raise FrklConfigException(
@@ -979,10 +977,6 @@ class FrklProcessor(ConfigProcessor):
                 # if self.default_leaf_key in new_value.keys() and self.default_leaf_default_key in new_value[self.default_leaf_key].keys():
                 if self.default_leaf_key in new_value.keys():
                     yield new_value
-                    # else:
-                    # dict_merge(current_vars, new_value, copy_dct=False)
-                    # print(self.values_so_far)
-                    # print("YYYYYYYYYYXXXXXXXXX")
 
             else:
                 for item in self.frklize(stem_branch, copy.deepcopy(current_vars)):
@@ -990,7 +984,7 @@ class FrklProcessor(ConfigProcessor):
 
 
 class Jinja2TemplateProcessor(ConfigProcessor):
-    """Processor to replace all occurences of Jinja template strings with values (predefined,
+    """Processor to replace all occurrences of Jinja template strings with values (predefined,
     or potentially dynamically processed in an earlier step).
 
     Args:
