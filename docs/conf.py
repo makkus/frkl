@@ -12,6 +12,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+import frkl
 
 import sys
 
@@ -32,7 +33,6 @@ project_root = os.path.dirname(cwd)
 # version is used.
 sys.path.insert(0, project_root)
 
-import frkl
 
 # -- General configuration ---------------------------------------------
 
