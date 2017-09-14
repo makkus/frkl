@@ -10,51 +10,52 @@ Tests for `frkl` module.
 import pprint
 
 import pytest
+
 from frkl.frkl import *
 
-#from click.testing import CliRunner
+# from click.testing import CliRunner
 
 TEST_DICTS = [({}, {}, {}), ({
-    'a': 1
-}, {
-    'a': 1
-}, {
-    'a': 1
-}), ({
-    'a': 1
-}, {
-    'b': 1
-}, {
-    'a': 1,
-    'b': 1
-}), ({
-    'a': 1
-}, {
-    'a': 2
-}, {
-    'a': 2
-}), ({
-    'a': 1,
-    'aa': 11
-}, {
-    'b': 2,
-    'bb': 22
-}, {
-    'a': 1,
-    'aa': 11,
-    'b': 2,
-    'bb': 22
-}), ({
-    'a': 1,
-    'aa': 11
-}, {
-    'b': 2,
-    'aa': 22
-}, {
-    'a': 1,
-    'b': 2,
-    'aa': 22
-})]
+                                 'a': 1
+                             }, {
+                                 'a': 1
+                             }, {
+                                 'a': 1
+                             }), ({
+                                      'a': 1
+                                  }, {
+                                      'b': 1
+                                  }, {
+                                      'a': 1,
+                                      'b': 1
+                                  }), ({
+                                           'a': 1
+                                       }, {
+                                           'a': 2
+                                       }, {
+                                           'a': 2
+                                       }), ({
+                                                'a': 1,
+                                                'aa': 11
+                                            }, {
+                                                'b': 2,
+                                                'bb': 22
+                                            }, {
+                                                'a': 1,
+                                                'aa': 11,
+                                                'b': 2,
+                                                'bb': 22
+                                            }), ({
+                                                     'a': 1,
+                                                     'aa': 11
+                                                 }, {
+                                                     'b': 2,
+                                                     'aa': 22
+                                                 }, {
+                                                     'a': 1,
+                                                     'b': 2,
+                                                     'aa': 22
+                                                 })]
 
 TEST_CONVERT_TO_PYTHON_OBJECT_DICT = [{
     "config": {
@@ -77,8 +78,8 @@ TEST_REGEXES = {
 
 TEST_REGEX_URLS = [("start_resturl", "replacement_resturl"), (
     "xstart_resturl", "xstart_resturl"), (
-        "begin/frkl_expl/end", "begin/makkus/freckles/examples/end"), (
-            "start/frkl_expl/end", "replacement/makkus/freckles/examples/end")]
+                       "begin/frkl_expl/end", "begin/makkus/freckles/examples/end"), (
+                       "start/frkl_expl/end", "replacement/makkus/freckles/examples/end")]
 
 TESTFILE_1_CONTENT = """- config:
     a: 1
@@ -165,11 +166,11 @@ ENSURE_PYTHON_CHAIN = [
 ]
 
 FRKL_INIT_PARAMS = {
-        STEM_KEY_NAME: "childs",
-        DEFAULT_LEAF_KEY_NAME: "task",
-        DEFAULT_LEAF_DEFAULT_KEY_NAME: "task_name",
-        DEFAULT_LEAF_KEY_MAP_NAME: "vars"
-    }
+    STEM_KEY_NAME: "childs",
+    DEFAULT_LEAF_KEY_NAME: "task",
+    DEFAULT_LEAF_DEFAULT_KEY_NAME: "task_name",
+    DEFAULT_LEAF_KEY_MAP_NAME: "vars"
+}
 FRKLIZE_CHAIN = [
     EnsureUrlProcessor(), EnsurePythonObjectProcessor(),
     LoadMoreConfigsProcessor(), FrklProcessor(FRKL_INIT_PARAMS)
@@ -184,19 +185,22 @@ PROCESSOR_TESTS = [
     (REGEX_CHAIN, "xstart_resturl", "unprocessed", ["xstart_resturl"]),
     (REGEX_CHAIN, "begin/frkl_expl/end", "unprocessed", ["begin/makkus/freckles/examples/end"]),
     (REGEX_CHAIN, "start/frkl_expl/end", "unprocessed", ["replacement/makkus/freckles/examples/end"]),
-    (ENSURE_URL_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), "unprocessed", [TESTFILE_1_CONTENT]),
-    (ENSURE_URL_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", "unprocessed", [TESTFILE_1_CONTENT]),
+    (ENSURE_URL_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"), "unprocessed",
+     [TESTFILE_1_CONTENT]),
+    (ENSURE_URL_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml", "unprocessed",
+     [TESTFILE_1_CONTENT]),
     (ENSURE_PYTHON_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile.yaml"),
-           "unprocessed", [TEST_CONVERT_TO_PYTHON_OBJECT_DICT]),
+     "unprocessed", [TEST_CONVERT_TO_PYTHON_OBJECT_DICT]),
     (ENSURE_PYTHON_CHAIN, "https://raw.githubusercontent.com/makkus/frkl/master/tests/testfile.yaml",
      "unprocessed", [TEST_CONVERT_TO_PYTHON_OBJECT_DICT]),
     (JINJA_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_jinja.yaml"),
      "unprocessed", [TESTFILE_1_CONTENT]),
     (ABBREV_CHAIN, "gh:makkus/freckles/examples/quickstart.yml", "unprocessed",
      ["https://raw.githubusercontent.com/makkus/freckles/master/examples/quickstart.yml"]),
-    (ABBREV_CHAIN, "bb:makkus/freckles/examples/quickstart.yml", "unprocessed", ["https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"]),
+    (ABBREV_CHAIN, "bb:makkus/freckles/examples/quickstart.yml", "unprocessed",
+     ["https://bitbucket.org/makkus/freckles/src/master/examples/quickstart.yml"]),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_1.yml"),
-         "frkl", TEST_FRKLIZE_1_RESULT),
+     "frkl", TEST_FRKLIZE_1_RESULT),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_2.yml"),
      "frkl", TEST_FRKLIZE_1_RESULT),
     (FRKLIZE_CHAIN, os.path.join(os.path.dirname(os.path.realpath(__file__)), "testfile_frklize_3.yml"),
@@ -207,6 +211,7 @@ PROCESSOR_TESTS = [
      "frkl", TEST_FRKLIZE_1_RESULT_DOUBLE)
 ]
 
+
 @pytest.mark.parametrize("input_obj, expected", [
     (["a", "b", "c"], True),
     (("a", "b", "c"), True),
@@ -215,12 +220,11 @@ PROCESSOR_TESTS = [
     ((u"a", "b", "c"), True)
 ])
 def test_list_of_strings(input_obj, expected):
-
     assert is_list_of_strings(input_obj) == expected
+
 
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):
-
     dict1_orig = copy.deepcopy(dict1)
     dict2_orig = copy.deepcopy(dict2)
     merged = dict_merge(dict1, dict2, True)
@@ -231,7 +235,6 @@ def test_dict_merge_copy_result(dict1, dict2, expected):
 
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_dont_copy_result(dict1, dict2, expected):
-
     dict1_orig = copy.deepcopy(dict1)
     dict2_orig = copy.deepcopy(dict2)
     merged = dict_merge(dict1, dict2, False)
@@ -242,7 +245,6 @@ def test_dict_merge_dont_copy_result(dict1, dict2, expected):
 
 @pytest.mark.parametrize("processor, input_config, context_key, expected", PROCESSOR_TESTS)
 def test_processor(processor, input_config, context_key, expected):
-
     frkl_obj = Frkl(input_config, processor_chain=processor)
     result = frkl_obj.process()
 
@@ -255,27 +257,26 @@ def test_processor(processor, input_config, context_key, expected):
 
 @pytest.mark.parametrize("input_url", TEST_ENSURE_FAIL_URLS)
 def test_ensure_fail_url_processor(input_url):
-
     prc = EnsureUrlProcessor()
     prc.set_current_config(input_url, {"last_call": False})
     with pytest.raises(FrklConfigException):
         prc.process()
 
+
 @pytest.mark.parametrize("config, expected", [
     ({"a": 1}, {"vars": {'a': 1}})
 ])
 def test_frkl_valid_config(config, expected):
-
     frkl_obj = FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config, {"last_call": False})
     frkl_obj.process()
+
 
 @pytest.mark.parametrize("config", [
     ({"a": 1, "vars": 2}),
     ({"tasks": 1, "childs": 1})
 ])
 def test_frkl_invalid_config(config):
-
     frkl_obj = FrklProcessor(FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config, {"last_call": False})
     with pytest.raises(FrklConfigException):
@@ -303,7 +304,6 @@ def test_frkl_invalid_config(config):
     "two_input_files_1"
 ])
 def test_files(test_name):
-
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
     chain_file = os.path.join(folder, "_chain.yml")
     input_files = []
@@ -328,11 +328,11 @@ def test_files(test_name):
 
     assert expected_obj == result_obj
 
+
 @pytest.mark.parametrize("test_name", [
     "simple_test12"
 ])
 def test_files_collector(test_name):
-
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
     chain_file = os.path.join(folder, "_chain.yml")
     input_files = []
@@ -365,7 +365,6 @@ def test_files_collector(test_name):
     "collector_3"
 ])
 def test_collector_init(test_name):
-
     folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_dirs", test_name)
 
     input_files = []

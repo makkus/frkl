@@ -17,7 +17,8 @@ class PycharmRunnerException(Exception):
 def run(args, module_args):
     parts = args.target.split(':')
     if len(parts) != 2:
-        raise PycharmRunnerException('Bad target definition: {}. Expected: package.module:function.'.format(args.target))
+        raise PycharmRunnerException(
+            'Bad target definition: {}. Expected: package.module:function.'.format(args.target))
     (module_name, func_name) = parts
     module = import_module(module_name)
     func = getattr(module, func_name, NOTHING)
@@ -45,4 +46,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

@@ -168,6 +168,7 @@ def load_extension(name, init_params=None):
     return mgr
     # return {ext.name: ext.plugin() for ext in mgr.extensions}
 
+
 def load_collector(name, init_params=None):
     """Loading a collector extension.
     
@@ -254,7 +255,8 @@ class FrklCallback(object):
             processor_chain = init_config
             collector_name = "default"
         elif not isinstance(init_config, dict):
-            raise Exception("init configuration needs to be either list of processor configs, or dict with 'processor_chain' and optionally 'collector' keys")
+            raise Exception(
+                "init configuration needs to be either list of processor configs, or dict with 'processor_chain' and optionally 'collector' keys")
         else:
             if not "processor_chain" in init_config.keys():
                 raise Exception("No processor chain specified in '{}'".format(init_file))
@@ -289,6 +291,7 @@ class FrklCallback(object):
 
         temp = config_frkl.process(collector)
         return collector
+
     init = staticmethod(init)
 
     def __init__(self, init_params=None):
@@ -309,7 +312,6 @@ class FrklCallback(object):
         """
 
         return True
-
 
     @abc.abstractmethod
     def callback(self, item):
@@ -910,7 +912,9 @@ class FrklProcessor(ConfigProcessor):
             if not any(x in config.keys() for x in self.all_keys):
 
                 if not len(config) == 1:
-                    raise FrklConfigException("This form of configuration is not implemented yet: {} -- current vars: {}".format(config, current_vars))
+                    raise FrklConfigException(
+                        "This form of configuration is not implemented yet: {} -- current vars: {}".format(config,
+                                                                                                           current_vars))
                 else:
                     key = next(iter(config))
                     value = config[key]
@@ -975,7 +979,7 @@ class FrklProcessor(ConfigProcessor):
                 # if self.default_leaf_key in new_value.keys() and self.default_leaf_default_key in new_value[self.default_leaf_key].keys():
                 if self.default_leaf_key in new_value.keys():
                     yield new_value
-                # else:
+                    # else:
                     # dict_merge(current_vars, new_value, copy_dct=False)
                     # print(self.values_so_far)
                     # print("YYYYYYYYYYXXXXXXXXX")
@@ -1002,7 +1006,6 @@ class Jinja2TemplateProcessor(ConfigProcessor):
         return STRING_FORMAT
 
     def validate_init(self):
-
 
         self.template_values = self.init_params.get("template_values", {})
         self.use_environment_vars = self.init_params.get("use_environment_vars", False)
@@ -1265,7 +1268,6 @@ COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN = [
 
 
 class Frkl(object):
-
     def init(files_or_folders, additional_configs=None, use_strings_as_config=False):
         """Creates a Frkl object.
 

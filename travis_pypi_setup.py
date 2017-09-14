@@ -3,7 +3,6 @@
 """Update encrypted deploy password in Travis config file
 """
 
-
 from __future__ import print_function
 
 import base64
@@ -20,7 +19,6 @@ try:
     from urllib import urlopen
 except:
     from urllib.request import urlopen
-
 
 GITHUB_REPO = 'makkus/frkl'
 TRAVIS_CONFIG_FILE = os.path.join(
@@ -113,6 +111,7 @@ def main(args):
 
 if '__main__' == __name__:
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repo', default=GITHUB_REPO,
                         help='GitHub repo (default: %s)' % GITHUB_REPO)
