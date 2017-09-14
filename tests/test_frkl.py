@@ -10,7 +10,6 @@ Tests for `frkl` module.
 import pprint
 
 import pytest
-import yaml
 from frkl.frkl import *
 
 #from click.testing import CliRunner
