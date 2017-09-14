@@ -7,18 +7,11 @@ test_frkl
 Tests for `frkl` module.
 """
 
-import copy
-import glob
-import os
 import pprint
-import sys
-import unittest
-from contextlib import contextmanager
 
 import pytest
-from frkl.frkl import *
-
 import yaml
+from frkl.frkl import *
 
 #from click.testing import CliRunner
 

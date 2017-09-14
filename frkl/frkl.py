@@ -8,21 +8,18 @@ import abc
 import collections
 import copy
 import logging
-import os
-import pprint
 import re
 import sys
 import types
-from builtins import *
 
+import os
 import requests
 import six
 import stevedore
-from future.builtins.disabled import *
+import yaml
+from builtins import *
 from jinja2 import BaseLoader, Environment
 from six import string_types
-
-import yaml
 
 try:
     set
