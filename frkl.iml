@@ -4,18 +4,10 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/frkl" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.tox" />
+      <excludeFolder url="file://$MODULE_DIR$/frkl.egg-info" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 2.7.13 (~/.local/opt/conda/envs/nsbl/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-  <component name="PackageRequirementsSettings">
-    <option name="requirementsPath" value="" />
-  </component>
-  <component name="PyDocumentationSettings">
-    <option name="myDocStringFormat" value="Google" />
-  </component>
-  <component name="TestRunnerService">
-    <option name="projectConfiguration" value="py.test" />
-    <option name="PROJECT_TEST_RUNNER" value="py.test" />
   </component>
 </module>
