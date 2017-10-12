@@ -1163,6 +1163,8 @@ class UrlAbbrevProcessor(ConfigProcessor):
             else:
                 self.abbrevs = copy.deepcopy(abbrevs)
 
+        self.verbose = self.init_params.get("verbose", False)
+
         return True
 
     def process_current_config(self):
@@ -1232,6 +1234,9 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 if tokens:
                     postfix = "/".join(tokens)
                     result_string += postfix
+
+                if self.verbose:
+                    print("Expanding '{}' -> '{}'".format(config, result_string))
 
                 return result_string
         else:
