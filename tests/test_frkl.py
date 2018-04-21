@@ -10,52 +10,17 @@ Tests for `frkl` module.
 import pprint
 
 import pytest
-
 from frkl.frkl import *
 
 # from click.testing import CliRunner
 
-TEST_DICTS = [({}, {}, {}), ({
-                                 'a': 1
-                             }, {
-                                 'a': 1
-                             }, {
-                                 'a': 1
-                             }), ({
-                                      'a': 1
-                                  }, {
-                                      'b': 1
-                                  }, {
-                                      'a': 1,
-                                      'b': 1
-                                  }), ({
-                                           'a': 1
-                                       }, {
-                                           'a': 2
-                                       }, {
-                                           'a': 2
-                                       }), ({
-                                                'a': 1,
-                                                'aa': 11
-                                            }, {
-                                                'b': 2,
-                                                'bb': 22
-                                            }, {
-                                                'a': 1,
-                                                'aa': 11,
-                                                'b': 2,
-                                                'bb': 22
-                                            }), ({
-                                                     'a': 1,
-                                                     'aa': 11
-                                                 }, {
-                                                     'b': 2,
-                                                     'aa': 22
-                                                 }, {
-                                                     'a': 1,
-                                                     'b': 2,
-                                                     'aa': 22
-                                                 })]
+TEST_DICTS = [({}, {}, {}),
+              ({ 'a': 1 }, { 'a': 1 }, { 'a': 1 }),
+              ({ 'a': 1 }, { 'b': 1 }, { 'a': 1, 'b': 1 }),
+              ({ 'a': 1 }, { 'a': 2 }, { 'a': 2 }),
+              ({ 'a': 1, 'aa': 11 }, { 'b': 2, 'bb': 22 }, { 'a': 1, 'aa': 11, 'b': 2, 'bb': 22 }),
+              ({ 'a': 1, 'aa': 11 }, { 'b': 2, 'aa': 22 }, { 'a': 1, 'b': 2, 'aa': 22 })
+]
 
 TEST_CONVERT_TO_PYTHON_OBJECT_DICT = [{
     "config": {
@@ -221,7 +186,6 @@ PROCESSOR_TESTS = [
 ])
 def test_list_of_strings(input_obj, expected):
     assert is_list_of_strings(input_obj) == expected
-
 
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):

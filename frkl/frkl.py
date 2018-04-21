@@ -8,11 +8,11 @@ import abc
 import collections
 import copy
 import logging
+import os
 import re
 import sys
 import types
 
-import os
 import requests
 import six
 import stevedore
@@ -72,6 +72,7 @@ FRKL_DEFAULT_PARAMS = {
 }
 
 PLACEHOLDER = -9876
+OPT_PLACEHOLDER = -9877
 NO_STEM_INDICATOR = "-99999"
 RECURSIVE_LOAD_INDICATOR = "-67323"
 
@@ -79,7 +80,7 @@ RECURSIVE_LOAD_INDICATOR = "-67323"
 DEFAULT_ABBREVIATIONS = {
     'gh':
         ["https://raw.githubusercontent.com", "/", PLACEHOLDER, "/", PLACEHOLDER, "/", "master", "/"],
-    'bb': ["https://bitbucket.org", "/", PLACEHOLDER, "/", PLACEHOLDER, "/", "src", "/", "master", "/"]
+    'bb': ["https://bitbucket.org", "/", PLACEHOLDER, "/", PLACEHOLDER, "/", "src", "/", "master", "/"],
 }
 
 
@@ -171,11 +172,11 @@ def load_extension(name, init_params=None):
 
 def load_collector(name, init_params=None):
     """Loading a collector extension.
-    
+
     Args:
       name (str): the registered name of the collector
       init_params (dict): the parameters to initialize the extension object
-      
+
     Returns:
       FrklCallback: the extension collector
     """
@@ -1141,6 +1142,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
     def __init__(self, init_params=None):
         super(UrlAbbrevProcessor, self).__init__(init_params)
+        self.opt_split_string = '::'
 
     def get_input_format(self):
 
@@ -1203,6 +1205,15 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
         prefix, sep, rest = config.partition(':')
 
+        if self.opt_split_string in rest:
+            tokens = rest.split(self.opt_split_string)
+            rest = "{}{}".format(tokens[0], tokens[-1])
+            opt = tokens[1:-1]
+            if not opt:
+                raise Exception("Invalid url, need at least two option splitters ('{}'): {}".format(self.opt_split_string, config))
+        else:
+            opt = None
+
         if prefix in self.abbrevs.keys():
 
             if isinstance(self.abbrevs[prefix], string_types):
@@ -1234,6 +1245,9 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 if tokens:
                     postfix = "/".join(tokens)
                     result_string += postfix
+
+                if opt:
+                    opt_appendix = "::".join(opt)
 
                 if self.verbose:
                     print("Expanding '{}' -> '{}'".format(config, result_string))
