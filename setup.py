@@ -19,7 +19,7 @@ test_requirements = ['pytest==3.6.0']
 
 setup(
     name='frkl',
-    version='0.2.1',
+    version='0.3.0',
     description="Elastic dictionaries and configuration",
     long_description=readme + '\n\n' + history,
     author="Markus Binsteiner",
