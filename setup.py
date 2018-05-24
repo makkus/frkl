@@ -43,21 +43,21 @@ setup(
             'frkl=frkl.cli:cli'
         ],
         'frkl.frk': [
-            'expand_url=frkl.frkl:UrlAbbrevProcessor',
-            'read=frkl.frkl:EnsureUrlProcessor',
-            'deserialize=frkl.frkl:EnsurePythonObjectProcessor',
-            'frklize=frkl.frkl:FrklProcessor',
-            'render_template=frkl.frkl:Jinja2TemplateProcessor',
-            'regex=frkl.frkl:RegexProcessor',
-            'load_additional_configs=frkl.frkl:LoadMoreConfigsProcessor',
-            'to_yaml=frkl.frkl:ToYamlProcessor',
-            'merge=frkl.frkl:MergeProcessor',
-            'id=frkl.frkl:IdProcessor',
-            'inject=frkl.frkl:DictInjectionProcessor',
-            'split=frkl.frkl:YamlTextSplitProcessor'
+            'expand_url=frkl.processors:UrlAbbrevProcessor',
+            'read=frkl.processors:EnsureUrlProcessor',
+            'deserialize=frkl.processors:EnsurePythonObjectProcessor',
+            'frklize=frkl.processors:FrklProcessor',
+            'render_template=frkl.processors:Jinja2TemplateProcessor',
+            'regex=frkl.processors:RegexProcessor',
+            'load_additional_configs=frkl.processors:LoadMoreConfigsProcessor',
+            'to_yaml=frkl.processors:ToYamlProcessor',
+            'merge=frkl.processors:MergeProcessor',
+            'id=frkl.processors:IdProcessor',
+            'inject=frkl.processors:DictInjectionProcessor',
+            'split=frkl.processors:YamlTextSplitProcessor'
         ],
         'frkl.collector': [
-            'merge=frkl.frkl:MergeResultCallback'
+            'merge=frkl.callbacks:MergeResultCallback'
         ]
     },
     include_package_data=True,

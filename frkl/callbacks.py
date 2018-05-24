@@ -4,29 +4,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import abc
-import collections
-import copy
-import logging
-import os
-import re
-import sys
-import types
-
-import requests
-import six
-import stevedore
-#import yaml
-from builtins import *
-from jinja2 import BaseLoader, Environment
-from six import string_types
-
-from ruamel.yaml import YAML
-
-from .exceptions import FrklConfigException
 from .processors import *
 
-from .defaults import *
+# import yaml
+from .chains import *
+from .frkl import Frkl
 
 
 try:
@@ -45,18 +27,6 @@ except ImportError:
 __metaclass__ = type
 
 log = logging.getLogger("frkl")
-
-
-
-
-# ------------------------------------------------------------
-# utility methods
-
-
-# extensions
-# ------------------------------------------------------------------------
-
-
 
 def load_collector(name, init_params=None):
     """Loading a collector extension.
@@ -160,7 +130,6 @@ class FrklCallback(object):
             collector_name = 'merge'
 
         collector = load_collector(collector_name, collector_init).driver
-        from .frkl import Frkl
         bootstrap = Frkl(processor_chain,
                          COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
         config_frkl = bootstrap.process(FrklFactoryCallback())
@@ -338,6 +307,5 @@ class FrklFactoryCallback(FrklCallback):
         self.bootstrap_chain.append(ext.driver)
 
     def result(self):
-        from .frkl import Frkl
         return Frkl([], self.bootstrap_chain)
 

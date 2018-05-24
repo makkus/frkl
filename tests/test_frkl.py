@@ -8,24 +8,24 @@ Tests for `frkl` module.
 """
 
 import pprint
-import yaml
-import pytest
-from frkl.frkl import *
-from frkl.defaults import *
-from frkl.processors import *
-from frkl.callbacks import *
 
+import pytest
+import yaml
 from frutils.frutils import *
 
+from frkl.frkl import *
+from frkl.frkl_factory import *
+from frkl.callbacks import *
+from frkl.processors import  *
 # from click.testing import CliRunner
 
 TEST_DICTS = [({}, {}, {}),
-              ({ 'a': 1 }, { 'a': 1 }, { 'a': 1 }),
-              ({ 'a': 1 }, { 'b': 1 }, { 'a': 1, 'b': 1 }),
-              ({ 'a': 1 }, { 'a': 2 }, { 'a': 2 }),
-              ({ 'a': 1, 'aa': 11 }, { 'b': 2, 'bb': 22 }, { 'a': 1, 'aa': 11, 'b': 2, 'bb': 22 }),
-              ({ 'a': 1, 'aa': 11 }, { 'b': 2, 'aa': 22 }, { 'a': 1, 'b': 2, 'aa': 22 })
-]
+              ({'a': 1}, {'a': 1}, {'a': 1}),
+              ({'a': 1}, {'b': 1}, {'a': 1, 'b': 1}),
+              ({'a': 1}, {'a': 2}, {'a': 2}),
+              ({'a': 1, 'aa': 11}, {'b': 2, 'bb': 22}, {'a': 1, 'aa': 11, 'b': 2, 'bb': 22}),
+              ({'a': 1, 'aa': 11}, {'b': 2, 'aa': 22}, {'a': 1, 'b': 2, 'aa': 22})
+              ]
 
 TEST_CONVERT_TO_PYTHON_OBJECT_DICT = [{
     "config": {
@@ -192,6 +192,7 @@ PROCESSOR_TESTS = [
 def test_list_of_strings(input_obj, expected):
     assert is_list_of_strings(input_obj) == expected
 
+
 @pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
 def test_dict_merge_copy_result(dict1, dict2, expected):
     dict1_orig = copy.deepcopy(dict1)
@@ -288,7 +289,7 @@ def test_files(test_name):
 
     expected_obj = yaml.load(content)
 
-    frkl_obj = Frkl.factory(chain_file, input_files)
+    frkl_obj = factory(chain_file, input_files)
     result_obj = frkl_obj.process()
 
     # pprint.pprint(expected_obj)
@@ -317,7 +318,7 @@ def test_files_collector(test_name):
 
     expected_obj = yaml.load(content)
 
-    frkl_obj = Frkl.factory(chain_file, input_files)
+    frkl_obj = factory(chain_file, input_files)
     test12_init = {"append_keys": "vars/a"}
     result_obj = frkl_obj.process(MergeDictResultCallback(test12_init))
 

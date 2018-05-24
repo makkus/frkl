@@ -3,6 +3,8 @@
 # python 3 compatibility
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
+
+
 # ------------------------------------------------------------------------
 # Frkl Exception(s)
 
@@ -23,4 +25,3 @@ class FrklConfigException(Exception):
             self.errors = [errors]
         else:
             self.errors = errors
-

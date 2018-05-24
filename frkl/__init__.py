@@ -3,3 +3,5 @@
 __author__ = """Markus Binsteiner"""
 __email__ = 'makkus@posteo.de'
 __version__ = '0.2.1'
+
+from .frkl import Frkl
