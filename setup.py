@@ -12,36 +12,27 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'frutils==0.1.0',
     'requests>=2.13.0',
-    'stevedore>=1.25.0',
+    'stevedore>=1.28.0',
 ]
 
-extra_requirements = {
-    "cli": [
-        'Click>=6.7',
-        'click-log>=0.1.8'
-    ]
-}
+extra_requirements = {"cli": ['Click>=6.7', 'click-log>=0.2.1']}
 
-test_requirements = [
-    'pytest==3.4.2'
-]
+test_requirements = ['pytest==3.6.0']
 
 setup(
     name='frkl',
     version='0.2.1',
-    description="Elastic configuration files",
+    description="Elastic dictionaries and configuration",
     long_description=readme + '\n\n' + history,
     author="Markus Binsteiner",
-    author_email='makkus@posteo.de',
+    author_email='makkus@frkl.io',
     url='https://github.com/makkus/frkl',
     packages=[
         'frkl',
     ],
     package_dir={'frkl': 'frkl'},
     entry_points={
-        'console_scripts': [
-            'frkl=frkl.cli:cli'
-        ],
+        'console_scripts': ['frkl=frkl.cli:cli'],
         'frkl.frk': [
             'expand_url=frkl.processors:UrlAbbrevProcessor',
             'read=frkl.processors:EnsureUrlProcessor',
@@ -56,9 +47,7 @@ setup(
             'inject=frkl.processors:DictInjectionProcessor',
             'split=frkl.processors:YamlTextSplitProcessor'
         ],
-        'frkl.collector': [
-            'merge=frkl.callbacks:MergeResultCallback'
-        ]
+        'frkl.collector': ['merge=frkl.callbacks:MergeResultCallback']
     },
     include_package_data=True,
     install_requires=requirements,
@@ -79,5 +68,4 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     test_suite='tests',
-    tests_require=test_requirements
-)
+    tests_require=test_requirements)

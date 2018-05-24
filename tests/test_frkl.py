@@ -182,37 +182,6 @@ PROCESSOR_TESTS = [
 ]
 
 
-@pytest.mark.parametrize("input_obj, expected", [
-    (["a", "b", "c"], True),
-    (("a", "b", "c"), True),
-    (["a", 1, "c"], False),
-    (("a", 1, "c"), False),
-    ((u"a", "b", "c"), True)
-])
-def test_list_of_strings(input_obj, expected):
-    assert is_list_of_strings(input_obj) == expected
-
-
-@pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
-def test_dict_merge_copy_result(dict1, dict2, expected):
-    dict1_orig = copy.deepcopy(dict1)
-    dict2_orig = copy.deepcopy(dict2)
-    merged = dict_merge(dict1, dict2, True)
-    assert merged == expected
-    assert dict1 == dict1_orig
-    assert dict2 == dict2_orig
-
-
-@pytest.mark.parametrize("dict1, dict2, expected", TEST_DICTS)
-def test_dict_merge_dont_copy_result(dict1, dict2, expected):
-    dict1_orig = copy.deepcopy(dict1)
-    dict2_orig = copy.deepcopy(dict2)
-    merged = dict_merge(dict1, dict2, False)
-    assert merged == expected
-    assert dict1 == expected
-    assert dict2 == dict2_orig
-
-
 @pytest.mark.parametrize("processor, input_config, context_key, expected", PROCESSOR_TESTS)
 def test_processor(processor, input_config, context_key, expected):
     frkl_obj = Frkl(input_config, processor_chain=processor)

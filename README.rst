@@ -4,17 +4,17 @@ Overview
 
 
 .. image:: https://img.shields.io/pypi/v/frkl.svg
-        :target: https://pypi.python.org/pypi/frkl
+:target: https://pypi.python.org/pypi/frkl
 
 .. image:: https://img.shields.io/travis/makkus/frkl.svg
-        :target: https://travis-ci.org/makkus/frkl
+:target: https://travis-ci.org/makkus/frkl
 
 .. image:: https://readthedocs.org/projects/frkl/badge/?version=latest
-        :target: https://frkl.readthedocs.io/en/latest/?badge=latest
+:target: https://frkl.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 .. image:: https://pyup.io/repos/github/makkus/frkl/shield.svg
-     :target: https://pyup.io/repos/github/makkus/frkl/
+:target: https://pyup.io/repos/github/makkus/frkl/
      :alt: Updates
 
 

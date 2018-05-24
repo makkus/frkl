@@ -6,6 +6,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from .defaults import *
 from .processors import UrlAbbrevProcessor, EnsureUrlProcessor, EnsurePythonObjectProcessor, FrklProcessor
+
 # simple chain to convert a string (which might be an abbreviated url or path or yaml or json string) into a python object
 DEFAULT_PROCESSOR_CHAIN = [
     UrlAbbrevProcessor(),
