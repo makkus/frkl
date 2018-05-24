@@ -10,9 +10,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'frutils==0.1.0',
-    'requests>=2.13.0',
-    'stevedore>=1.28.0',
+    'frutils==0.1.0', 'requests>=2.13.0', 'stevedore>=1.28.0', 'six>=1.11.0'
 ]
 
 extra_requirements = {"cli": ['Click>=6.7', 'click-log>=0.2.1']}
