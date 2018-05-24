@@ -4,19 +4,24 @@ Overview
 
 
 .. image:: https://img.shields.io/pypi/v/frkl.svg
-:target: https://pypi.python.org/pypi/frkl
+           :target: https://pypi.python.org/pypi/frkl
+           :alt: pyup
 
 .. image:: https://img.shields.io/travis/makkus/frkl.svg
-:target: https://travis-ci.org/makkus/frkl
+           :target: https://travis-ci.org/makkus/frkl
+           :alt: travis
 
 .. image:: https://readthedocs.org/projects/frkl/badge/?version=latest
-:target: https://frkl.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
+           :target: https://frkl.readthedocs.io/en/latest/?badge=latest
+           :alt: documentation
 
 .. image:: https://pyup.io/repos/github/makkus/frkl/shield.svg
-:target: https://pyup.io/repos/github/makkus/frkl/
-     :alt: Updates
+           :target: https://pyup.io/repos/github/makkus/frkl/
+           :alt: updates
 
+.. image:: https://coveralls.io/repos/github/makkus/frkl/badge.svg?branch=master
+           :target: https://coveralls.io/github/makkus/frkl?branch=master
+           :alt: coveralls
 
 *elastic configuration files*
 
