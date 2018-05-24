@@ -8,9 +8,14 @@ Tests for `frkl` module.
 """
 
 import pprint
-
+import yaml
 import pytest
 from frkl.frkl import *
+from frkl.defaults import *
+from frkl.processors import *
+from frkl.callbacks import *
+
+from frutils.frutils import *
 
 # from click.testing import CliRunner
 

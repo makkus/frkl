@@ -10,17 +10,20 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'Click>=6.7',
-    'click-log>=0.1.8',
-    'six>=1.10.0',
+    'frutils==0.1.0',
     'requests>=2.13.0',
-    'jinja2>=2.8.1',
     'stevedore>=1.25.0',
-    'future>=0.16.0'
 ]
 
+extra_requirements = {
+    "cli": [
+        'Click>=6.7',
+        'click-log>=0.1.8'
+    ]
+}
+
 test_requirements = [
-    'pytest==3.2.2'
+    'pytest==3.4.2'
 ]
 
 setup(
@@ -59,6 +62,7 @@ setup(
     },
     include_package_data=True,
     install_requires=requirements,
+    extra_require=extra_requirements,
     license="GNU General Public License v3",
     zip_safe=False,
     keywords='frkl',
