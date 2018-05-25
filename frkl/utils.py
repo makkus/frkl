@@ -4,23 +4,24 @@ import logging
 
 from six import string_types
 
-log = logging.getLogger('frkl')
+log = logging.getLogger("frkl")
 
 
 def expand_string_to_git_details(value, default_abbrevs):
     fail_msg = None
     branch = None
-    opt_split_string = '::'
+    opt_split_string = "::"
     if opt_split_string in value:
         tokens = value.split(opt_split_string)
         opt = tokens[1:-1]
         if not opt:
             raise Exception(
-                "Not a valid url, needs at least 2 split strings ('{}')".
-                    format(opt_split_string))
+                "Not a valid url, needs at least 2 split strings ('{}')".format(
+                    opt_split_string
+                )
+            )
         if len(opt) != 1:
-            raise Exception(
-                "Not a valid url, can only have 1 branch: {}".format(value))
+            raise Exception("Not a valid url, can only have 1 branch: {}".format(value))
         branch = opt[0]
 
     result = expand_string_to_git_repo(value, default_abbrevs)
@@ -40,17 +41,21 @@ def expand_string_to_git_repo(value, default_abbrevs):
         is_string = False
     else:
         raise Exception(
-            "Not a supported type (only string or list are accepted): {}".
-                format(value))
+            "Not a supported type (only string or list are accepted): {}".format(value)
+        )
 
     try:
         frkl_obj = Frkl(
-            value, [
-                UrlAbbrevProcessor(init_params={
-                    "abbrevs": default_abbrevs,
-                    "add_default_abbrevs": False
-                })
-            ])
+            value,
+            [
+                UrlAbbrevProcessor(
+                    init_params={
+                        "abbrevs": default_abbrevs,
+                        "add_default_abbrevs": False,
+                    }
+                )
+            ],
+        )
         result = frkl_obj.process()
         if is_string:
             return result[0]

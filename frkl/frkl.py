@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python 3 compatibility
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .chains import *
 from .processors import *
@@ -18,6 +17,7 @@ except NameError:
 try:
     # noinspection PyCompatibility
     from urllib.request import urlopen
+
     # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
@@ -87,6 +87,7 @@ L        """
 
         if not callback:
             from .callbacks import MergeResultCallback
+
             callback = MergeResultCallback()
 
         idx = 0
@@ -100,28 +101,32 @@ L        """
 
             if len(configs_copy) > 1024:
                 raise FrklConfigException(
-                    "More than 1024 configs, this looks like a loop, exiting.")
+                    "More than 1024 configs, this looks like a loop, exiting."
+                )
 
             config = configs_copy.pop(0)
             context["current_original_config"] = config
 
-            self.process_single_config(config, self.processor_chain, callback,
-                configs_copy, context)
+            self.process_single_config(
+                config, self.processor_chain, callback, configs_copy, context
+            )
 
         current_config = None
         context["next_configs"] = []
 
         context["current_config"] = current_config
         context["last_call"] = True
-        self.process_single_config(current_config, self.processor_chain,
-            callback, [], context)
+        self.process_single_config(
+            current_config, self.processor_chain, callback, [], context
+        )
 
         callback.finished()
 
         return callback.result()
 
-    def process_single_config(self, config, processor_chain, callback,
-                              configs_copy, context):
+    def process_single_config(
+        self, config, processor_chain, callback, configs_copy, context
+    ):
         """Helper method to be able to recursively call the next processor in the chain.
 
         Args:
@@ -158,10 +163,15 @@ L        """
         last_processing_result = current_processor.process()
         if isinstance(last_processing_result, types.GeneratorType):
             for item in last_processing_result:
-                self.process_single_config(item, processor_chain[1:], callback,
-                    configs_copy, context)
+                self.process_single_config(
+                    item, processor_chain[1:], callback, configs_copy, context
+                )
 
         else:
-            self.process_single_config(last_processing_result,
-                processor_chain[1:], callback,
-                configs_copy, context)
+            self.process_single_config(
+                last_processing_result,
+                processor_chain[1:],
+                callback,
+                configs_copy,
+                context,
+            )

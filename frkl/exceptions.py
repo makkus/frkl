@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python 3 compatibility
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 # ------------------------------------------------------------------------
@@ -10,6 +9,7 @@ from __future__ import (absolute_import, division, print_function,
 
 
 class FrklConfigException(Exception):
+
     def __init__(self, message, errors=None):
         """Exception that is thrown when processing configuration urls/content.
 

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python 3 compatibility
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .callbacks import *
 from .chains import *
@@ -20,6 +19,7 @@ except NameError:
 try:
     # noinspection PyCompatibility
     from urllib.request import urlopen
+
     # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
@@ -32,9 +32,7 @@ __metaclass__ = type
 log = logging.getLogger("frkl")
 
 
-def init(files_or_folders,
-         additional_configs=None,
-         use_strings_as_config=False):
+def init(files_or_folders, additional_configs=None, use_strings_as_config=False):
     """Creates a Frkl object.
 
         Args:
@@ -125,8 +123,11 @@ def get_configs(folders):
         chain_files = []
         config_files = []
         for child in os.listdir(folder):
-            if not child.startswith("__") and child.startswith(
-                "_") and child.endswith(".yml"):
+            if (
+                not child.startswith("__")
+                and child.startswith("_")
+                and child.endswith(".yml")
+            ):
                 chain_files.append(os.path.join(folder, child))
             elif child.endswith(".yml"):
                 config_files.append(os.path.join(folder, child))

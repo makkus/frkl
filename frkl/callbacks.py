@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # python 3 compatibility
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 # import yaml
 from .chains import *
@@ -19,6 +18,7 @@ except NameError:
 try:
     # noinspection PyCompatibility
     from urllib.request import urlopen
+
     # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
@@ -47,7 +47,7 @@ def load_collector(name, init_params=None):
 
     log2 = logging.getLogger("stevedore")
     out_hdlr = logging.StreamHandler(sys.stdout)
-    out_hdlr.setFormatter(logging.Formatter('PLUGIN ERROR -> %(message)s'))
+    out_hdlr.setFormatter(logging.Formatter("PLUGIN ERROR -> %(message)s"))
     out_hdlr.setLevel(logging.DEBUG)
     log2.addHandler(out_hdlr)
     log2.setLevel(logging.INFO)
@@ -55,12 +55,14 @@ def load_collector(name, init_params=None):
     log.debug("Loading extension...")
 
     mgr = stevedore.driver.DriverManager(
-        namespace='frkl.collector',
+        namespace="frkl.collector",
         name=name,
         invoke_on_load=True,
-        invoke_args=(init_params,))
-    log.debug("Registered plugins: {}".format(", ".join(
-        ext.name for ext in mgr.extensions)))
+        invoke_args=(init_params,),
+    )
+    log.debug(
+        "Registered plugins: {}".format(", ".join(ext.name for ext in mgr.extensions))
+    )
 
     return mgr
 
@@ -88,7 +90,7 @@ class FrklCallback(object):
           FrklCallback: the collector item
         """
 
-        yaml = YAML(typ='safe')
+        yaml = YAML(typ="safe")
 
         with open(init_file) as f:
             init_config = yaml.load(f)
@@ -103,12 +105,12 @@ class FrklCallback(object):
         else:
             if "processor_chain" not in init_config.keys():
                 raise Exception(
-                    "No processor chain specified in '{}'".format(init_file))
+                    "No processor chain specified in '{}'".format(init_file)
+                )
 
             processor_chain = init_config["processor_chain"]
             if not processor_chain:
-                raise Exception(
-                    "Processor chain in '{}' empty".format(init_file))
+                raise Exception("Processor chain in '{}' empty".format(init_file))
 
             if "collector" not in init_config.keys():
                 collector_name = "default"
@@ -126,12 +128,11 @@ class FrklCallback(object):
             collector_name = list(temp.keys())[0]
             collector_init = temp[collector_name]
 
-        if collector_name == 'default':
-            collector_name = 'merge'
+        if collector_name == "default":
+            collector_name = "merge"
 
         collector = load_collector(collector_name, collector_init).driver
-        bootstrap = Frkl(processor_chain,
-            COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
+        bootstrap = Frkl(processor_chain, COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
         config_frkl = bootstrap.process(FrklFactoryCallback())
 
         config_frkl.set_configs(configs)
@@ -297,13 +298,17 @@ class FrklFactoryCallback(FrklCallback):
     def callback(self, item):
         self.processors.append(item)
 
-        ext_name = item.get('processor', {}).get('type', None)
+        ext_name = item.get("processor", {}).get("type", None)
         if not ext_name:
             raise FrklConfigException(
-                "Can't parse processor name using config: {}".format(item))
-        ext_init_params = item.get('init', {})
-        log.debug("Loading extension '{}' using init parameters: '{}".format(
-            ext_name, ext_init_params))
+                "Can't parse processor name using config: {}".format(item)
+            )
+        ext_init_params = item.get("init", {})
+        log.debug(
+            "Loading extension '{}' using init parameters: '{}".format(
+                ext_name, ext_init_params
+            )
+        )
         ext = load_extension(ext_name, ext_init_params)
         self.bootstrap_chain.append(ext.driver)
 
