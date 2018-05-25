@@ -8,7 +8,7 @@ import sys
 import click
 from six import string_types
 
-import frkl_factory
+from .frkl_factory import get_configs, factory, init
 from . import __version__ as VERSION
 
 log = logging.getLogger("frkl")
@@ -50,9 +50,9 @@ def cli(ctx, version):
 @click.pass_context
 def print_config(ctx, init, config):
     if not init:
-        frkl_obj = frkl_factory.init(config)
+        frkl_obj = init(config)
     else:
-        frkl_obj = frkl_factory.factory(init, config)
+        frkl_obj = factory(init, config)
 
     result = frkl_obj.process()
 
