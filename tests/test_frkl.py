@@ -16,7 +16,8 @@ from frutils.frutils import *
 from frkl.frkl import *
 from frkl.frkl_factory import *
 from frkl.callbacks import *
-from frkl.processors import  *
+from frkl.processors import *
+
 # from click.testing import CliRunner
 
 TEST_DICTS = [({}, {}, {}),

@@ -8,8 +8,8 @@ import sys
 import click
 from six import string_types
 
+import frkl_factory
 from . import __version__ as VERSION
-from .frkl import Frkl
 
 log = logging.getLogger("frkl")
 
@@ -45,14 +45,14 @@ def cli(ctx, version):
 
 @cli.command("print-config")
 @click.option('--init', '-i', multiple=True,
-              help="config to bootstrap the frkl object itself, if not provided, config strings need to contain at least one folder with init information, refer to documentation for more info")
+    help="config to bootstrap the frkl object itself, if not provided, config strings need to contain at least one folder with init information, refer to documentation for more info")
 @click.argument('config', required=False, nargs=-1)
 @click.pass_context
 def print_config(ctx, init, config):
     if not init:
-        frkl_obj = Frkl.init(config)
+        frkl_obj = frkl_factory.init(config)
     else:
-        frkl_obj = Frkl.factory(init, config)
+        frkl_obj = frkl_factory.factory(init, config)
 
     result = frkl_obj.process()
 

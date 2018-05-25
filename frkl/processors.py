@@ -11,38 +11,42 @@ import os
 import re
 import sys
 import types
+
 import requests
 import six
 import stevedore
-from builtins import *
+# from builtins import *
 from frutils.defaults import *
 from frutils.frutils import *
 from jinja2 import BaseLoader, Environment
-from ruamel.yaml import YAML
 from six import string_types
 
 from .defaults import *
 from .exceptions import FrklConfigException
 
-yaml = YAML(typ="safe")
+yaml = StringYAML(typ="safe")
 yaml.default_flow_style = False
 
 try:
     set
 except NameError:
-    # noinspection PyDeprecation
+    # noinspection PyDeprecation,PyCompatibility
     from sets import Set as set
 
 try:
+    # noinspection PyCompatibility
     from urllib.request import urlopen
+    # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
+    # noinspection PyCompatibility
     from urlparse import urlparse
     from urllib import urlopen
 
 __metaclass__ = type
 
 log = logging.getLogger("frkl")
+
 
 # ------------------------------------------------------------
 # utility methods
@@ -77,7 +81,7 @@ def load_extension(name, init_params=None):
         namespace='frkl.frk',
         name=name,
         invoke_on_load=True,
-        invoke_args=(init_params, ))
+        invoke_args=(init_params,))
     log.debug("Registered plugins: {}".format(", ".join(
         ext.name for ext in mgr.extensions)))
 
@@ -245,7 +249,7 @@ class EnsureUrlProcessor(ConfigProcessor):
         else:
             raise FrklConfigException(
                 "Not a supported config file url or no local file found: {}".
-                format(config_file_url))
+                    format(config_file_url))
 
         return content
 
@@ -286,7 +290,13 @@ class IdProcessor(ConfigProcessor):
     """Adds an id to every config item."""
 
     def __init__(self, init_params=None):
+        self.id_type = None
+        self.id_name = None
+        self.id_key = None
+        self.current_id = None
+
         super(IdProcessor, self).__init__(init_params)
+
 
     def get_input_format(self):
         return PYTHON_FORMAT
@@ -341,6 +351,10 @@ class DictInjectionProcessor(ConfigProcessor):
     """
 
     def __init__(self, init_params=None):
+
+        self.injection_dicts = None
+        self.on_top = None
+        self.separator = None
 
         super(DictInjectionProcessor, self).__init__(init_params)
 
@@ -402,6 +416,15 @@ class FrklProcessor(ConfigProcessor):
 
     def __init__(self, init_params=None):
 
+        self.stem_key = None
+        self.default_leaf_key = None
+        self.default_leaf_default_key = None
+        self.other_valid_keys = None
+        self.default_leaf_key_map = None
+        self.all_keys = None
+        self.use_context = None
+        self.values_so_far = None
+
         super(FrklProcessor, self).__init__(init_params)
         self.configs = []
 
@@ -423,7 +446,7 @@ class FrklProcessor(ConfigProcessor):
                 if not len(tokens) is 2:
                     raise FrklConfigException(
                         "Default value for move_key_map can't be parsed as it has more than 2 parts (separated by '/': {})".
-                        format(self.default_leaf_key_map))
+                            format(self.default_leaf_key_map))
                 self.default_leaf_key_map = {"*": (tokens[0], tokens[1])}
             else:
                 self.default_leaf_key_map = {
@@ -437,14 +460,14 @@ class FrklProcessor(ConfigProcessor):
                     if not len(value) is 2:
                         raise FrklConfigException(
                             "Value for move_key_map can't be parsed as it has more than 2 parts (separated by '/': {})".
-                            format(value))
+                                format(value))
                     self.default_leaf_key_map[key] = value
                 else:
                     if not isinstance(value,
-                                      string_types) and not len(value) is 2:
+                        string_types) and not len(value) is 2:
                         raise FrklConfigException(
                             "move_key_map needs a list or tuple as value type with length '2': {}".
-                            format(self.default_leaf_key_map))
+                                format(self.default_leaf_key_map))
 
                     if "/" in value:
                         tokens = value.split("/")
@@ -452,7 +475,7 @@ class FrklProcessor(ConfigProcessor):
                         if not len(tokens) is 2:
                             raise FrklConfigException(
                                 "Value for move_key_map can't be parsed as it has more than 2 parts (separated by '/': {})".
-                                format(value))
+                                    format(value))
                         self.default_leaf_key_map[key] = (tokens[0], tokens[1])
                     else:
                         self.default_leaf_key_map[key] = (
@@ -472,10 +495,10 @@ class FrklProcessor(ConfigProcessor):
         if self.use_context and isinstance(self.use_context, bool):
             self.use_context = FRKL_CONTEXT_DEFAULT_KEY
         elif self.use_context and not isinstance(self.use_context,
-                                                 string_types):
+            string_types):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".
-                format(self.init_params))
+                    format(self.init_params))
 
         if START_VALUES_NAME in self.init_params.keys():
             self.values_so_far = self.init_params[START_VALUES_NAME]
@@ -537,7 +560,7 @@ class FrklProcessor(ConfigProcessor):
                 if not len(config) == 1:
                     raise FrklConfigException(
                         "This form of configuration is not implemented yet: {} -- current vars: {}".
-                        format(config, current_vars))
+                            format(config, current_vars))
                 else:
                     key = next(iter(config))
                     value = config[key]
@@ -545,7 +568,7 @@ class FrklProcessor(ConfigProcessor):
                     insert_leaf_key = self.default_leaf_key
                     insert_leaf_key_key = self.default_leaf_default_key
                     new_value.setdefault(insert_leaf_key,
-                                         {})[insert_leaf_key_key] = key
+                        {})[insert_leaf_key_key] = key
 
                     if not isinstance(value, dict):
                         if key in self.default_leaf_key_map.keys():
@@ -571,7 +594,7 @@ class FrklProcessor(ConfigProcessor):
                             else:
                                 raise FrklConfigException(
                                     "Can't find default_leaf_key to move values of key '{}".
-                                    format(key))
+                                        format(key))
 
                             new_value.setdefault(migrate_key, {}).update(value)
                             new_value[migrate_key].update(value)
@@ -582,7 +605,7 @@ class FrklProcessor(ConfigProcessor):
                     if key not in self.all_keys:
                         raise FrklConfigException(
                             "Key '{}' not allowed, since it is an unknown keys amongst known keys in config: {}".
-                            format(key, config))
+                                format(key, config))
 
                 new_value = config
 
@@ -606,7 +629,7 @@ class FrklProcessor(ConfigProcessor):
 
             else:
                 for item in self.frklize(stem_branch,
-                                         copy.deepcopy(current_vars)):
+                    copy.deepcopy(current_vars)):
                     yield item
 
 
@@ -620,6 +643,10 @@ class Jinja2TemplateProcessor(ConfigProcessor):
 
     def __init__(self, init_params=None):
 
+        self.template_values = None
+        self.use_environment_vars = None
+        self.use_context = None
+
         super(Jinja2TemplateProcessor, self).__init__(init_params)
 
     def get_input_format(self):
@@ -632,22 +659,22 @@ class Jinja2TemplateProcessor(ConfigProcessor):
         self.use_environment_vars = self.init_params.get(
             "use_environment_vars", False)
         if self.use_environment_vars and isinstance(self.use_environment_vars,
-                                                    bool):
+            bool):
             self.use_environment_vars = ENVIRONMENT_VARS_DEFAULT_KEY
         elif self.use_environment_vars and not isinstance(
-                self.use_environment_vars, string_types):
+            self.use_environment_vars, string_types):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".
-                format(self.init_params))
+                    format(self.init_params))
 
         self.use_context = self.init_params.get("use_context", False)
         if self.use_context and isinstance(self.use_context, bool):
             self.use_context = FRKL_CONTEXT_DEFAULT_KEY
         elif self.use_context and not isinstance(self.use_context,
-                                                 string_types):
+            string_types):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".
-                format(self.init_params))
+                    format(self.init_params))
 
         return True
 
@@ -678,6 +705,9 @@ class YamlTextSplitProcessor(ConfigProcessor):
     """
 
     def __init(self, init_params=None):
+
+        self.keywords = None
+        self.current_lines = None
         super(YamlTextSplitProcessor, self).__init__(init_params)
 
     def get_input_format(self):
@@ -698,7 +728,7 @@ class YamlTextSplitProcessor(ConfigProcessor):
 
             for line in new_config.splitlines():
                 if self.current_lines and any(
-                        line.startswith(keyword) for keyword in self.keywords):
+                    line.startswith(keyword) for keyword in self.keywords):
                     yield "\n".join(self.current_lines)
                     self.current_lines = [line]
                 else:
@@ -716,6 +746,7 @@ class RegexProcessor(ConfigProcessor):
     """
 
     def __init__(self, init_params=None):
+        self.regexes = None
         super(RegexProcessor, self).__init__(init_params)
 
     def get_input_format(self):
@@ -775,6 +806,9 @@ class UrlAbbrevProcessor(ConfigProcessor):
     """
 
     def __init__(self, init_params=None):
+
+        self.abbrevs = None
+        self.verbose = None
         super(UrlAbbrevProcessor, self).__init__(init_params)
         self.opt_split_string = '::'
 
@@ -846,7 +880,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
             if not opt:
                 raise Exception(
                     "Invalid url, need at least two option splitters ('{}'): {}".
-                    format(self.opt_split_string, config))
+                        format(self.opt_split_string, config))
         else:
             opt = None
 
@@ -867,7 +901,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
                         if not tokens:
                             raise FrklConfigException(
                                 "Can't expand url '{}': not enough parts, need at least {} parts seperated by '/' after ':'".
-                                format(config, min_tokens))
+                                    format(config, min_tokens))
                         to_append = tokens.pop(0)
                         if not to_append:
                             raise FrklConfigException(
@@ -892,4 +926,3 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 return result_string
         else:
             return config
-

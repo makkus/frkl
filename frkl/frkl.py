@@ -4,28 +4,31 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-#from .callbacks import *
-from .processors import *
 from .chains import *
+from .processors import *
 
 # import yaml
 
 try:
     set
 except NameError:
-    # noinspection PyDeprecation
+    # noinspection PyDeprecation,PyCompatibility
     from sets import Set as set
 
 try:
+    # noinspection PyCompatibility
     from urllib.request import urlopen
+    # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
+    # noinspection PyCompatibility
     from urlparse import urlparse
     from urllib import urlopen
 
 __metaclass__ = type
 
 log = logging.getLogger("frkl")
+
 
 class Frkl(object):
 
@@ -103,7 +106,7 @@ L        """
             context["current_original_config"] = config
 
             self.process_single_config(config, self.processor_chain, callback,
-                                       configs_copy, context)
+                configs_copy, context)
 
         current_config = None
         context["next_configs"] = []
@@ -111,7 +114,7 @@ L        """
         context["current_config"] = current_config
         context["last_call"] = True
         self.process_single_config(current_config, self.processor_chain,
-                                   callback, [], context)
+            callback, [], context)
 
         callback.finished()
 
@@ -156,9 +159,9 @@ L        """
         if isinstance(last_processing_result, types.GeneratorType):
             for item in last_processing_result:
                 self.process_single_config(item, processor_chain[1:], callback,
-                                           configs_copy, context)
+                    configs_copy, context)
 
         else:
             self.process_single_config(last_processing_result,
-                                       processor_chain[1:], callback,
-                                       configs_copy, context)
+                processor_chain[1:], callback,
+                configs_copy, context)

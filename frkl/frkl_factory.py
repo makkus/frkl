@@ -5,22 +5,25 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 from .callbacks import *
-from .processors import *
 from .chains import *
-
 from .frkl import Frkl
+from .processors import *
+
 # import yaml
 
 try:
     set
 except NameError:
-    # noinspection PyDeprecation
+    # noinspection PyDeprecation,PyCompatibility
     from sets import Set as set
 
 try:
+    # noinspection PyCompatibility
     from urllib.request import urlopen
+    # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
+    # noinspection PyCompatibility
     from urlparse import urlparse
     from urllib import urlopen
 
@@ -30,9 +33,9 @@ log = logging.getLogger("frkl")
 
 
 def init(files_or_folders,
-             additional_configs=None,
-             use_strings_as_config=False):
-        """Creates a Frkl object.
+         additional_configs=None,
+         use_strings_as_config=False):
+    """Creates a Frkl object.
 
         Args:
           files_or_folders (list): a list of files or folders or url strings. if the item is a file or url string, it will be used as Frkl bootstrap config, if it is a folder, it is forwarded to the 'from_folder' method to get lists of bootstrap and/or config files
@@ -43,37 +46,37 @@ def init(files_or_folders,
           Frkl: the object
         """
 
-        if additional_configs is None:
-            additional_configs = []
-        chain_files = []
-        config_files = []
+    if additional_configs is None:
+        additional_configs = []
+    chain_files = []
+    config_files = []
 
-        for f in files_or_folders:
-            if not os.path.exists(f):
-                # means this is a url string
-                if not use_strings_as_config:
-                    chain_files.append(f)
-                else:
-                    config_files.append(f)
-            elif os.path.isfile(f):
-                # means we can use this directly
+    for f in files_or_folders:
+        if not os.path.exists(f):
+            # means this is a url string
+            if not use_strings_as_config:
                 chain_files.append(f)
             else:
-                temp_chain, temp_config = Frkl.get_configs(f)
-                chain_files.extend(temp_chain)
-                config_files.extend(temp_config)
+                config_files.append(f)
+        elif os.path.isfile(f):
+            # means we can use this directly
+            chain_files.append(f)
+        else:
+            temp_chain, temp_config = get_configs(f)
+            chain_files.extend(temp_chain)
+            config_files.extend(temp_config)
 
-        if not chain_files:
-            raise FrklConfigException(
-                "No bootstrap information for Frkl found, can't create object."
-            )
+    if not chain_files:
+        raise FrklConfigException(
+            "No bootstrap information for Frkl found, can't create object."
+        )
 
-        frkl_obj = Frkl.factory(chain_files, config_files)
-        return frkl_obj
+    frkl_obj = factory(chain_files, config_files)
+    return frkl_obj
 
 
 def from_folder(folders):
-        """Creates a Frkl object using a folder path as the only input.
+    """Creates a Frkl object using a folder path as the only input.
 
         The folder needs to contain one or more files that start with the '_' and end with '.yml',
         which are used to bootstrap the frkl object by reading them in alphabetical order,
@@ -87,19 +90,19 @@ def from_folder(folders):
           Frkl: the initialized Frkl object
         """
 
-        chain_files, config_files = Frkl.get_configs(folders)
+    chain_files, config_files = get_configs(folders)
 
-        if not chain_files:
-            raise FrklConfigException(
-                "No bootstrap information for Frkl found, can't create object."
-            )
+    if not chain_files:
+        raise FrklConfigException(
+            "No bootstrap information for Frkl found, can't create object."
+        )
 
-        frkl_obj = Frkl.factory(chain_files, config_files)
-        return frkl_obj
+    frkl_obj = factory(chain_files, config_files)
+    return frkl_obj
 
 
 def get_configs(folders):
-        """Looks at a folder and retrieves configs.
+    """Looks at a folder and retrieves configs.
 
         The folders need to contain one or more files that start with the '_' and end with '.yml',
         which are used to bootstrap the frkl object by reading them in alphabetical order,
@@ -113,32 +116,32 @@ def get_configs(folders):
           tuple: first element of the tuple is a list of bootstrap configurations, 2nd element is a list of actual configs
         """
 
-        if isinstance(folders, string_types):
-            folders = [folders]
+    if isinstance(folders, string_types):
+        folders = [folders]
 
-        all_chains = []
-        all_configs = []
-        for folder in folders:
-            chain_files = []
-            config_files = []
-            for child in os.listdir(folder):
-                if not child.startswith("__") and child.startswith(
-                        "_") and child.endswith(".yml"):
-                    chain_files.append(os.path.join(folder, child))
-                elif child.endswith(".yml"):
-                    config_files.append(os.path.join(folder, child))
+    all_chains = []
+    all_configs = []
+    for folder in folders:
+        chain_files = []
+        config_files = []
+        for child in os.listdir(folder):
+            if not child.startswith("__") and child.startswith(
+                "_") and child.endswith(".yml"):
+                chain_files.append(os.path.join(folder, child))
+            elif child.endswith(".yml"):
+                config_files.append(os.path.join(folder, child))
 
-            chain_files.sort()
-            config_files.sort()
+        chain_files.sort()
+        config_files.sort()
 
-            all_chains.extend(chain_files)
-            all_configs.extend(config_files)
+        all_chains.extend(chain_files)
+        all_configs.extend(config_files)
 
-        return (all_chains, all_configs)
+    return (all_chains, all_configs)
 
 
 def factory(bootstrap_configs, frkl_configs=None):
-        """Factory method to easily create a Frkl object using a list of configurations to describe
+    """Factory method to easily create a Frkl object using a list of configurations to describe
         the format of the configs to use later on, as well as (optionally) a list of such configs.
 
         Args:
@@ -149,14 +152,13 @@ def factory(bootstrap_configs, frkl_configs=None):
           Frkl: a new Frkl object
         """
 
-        if frkl_configs is None:
-            frkl_configs = []
-        if isinstance(bootstrap_configs, string_types):
-            bootstrap_configs = [bootstrap_configs]
+    if frkl_configs is None:
+        frkl_configs = []
+    if isinstance(bootstrap_configs, string_types):
+        bootstrap_configs = [bootstrap_configs]
 
-        bootstrap = Frkl(bootstrap_configs, BOOTSTRAP_PROCESSOR_CHAIN)
-        config_frkl = bootstrap.process(FrklFactoryCallback())
+    bootstrap = Frkl(bootstrap_configs, BOOTSTRAP_PROCESSOR_CHAIN)
+    config_frkl = bootstrap.process(FrklFactoryCallback())
 
-        config_frkl.set_configs(frkl_configs)
-        return config_frkl
-
+    config_frkl.set_configs(frkl_configs)
+    return config_frkl

@@ -4,29 +4,32 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from .processors import *
-
 # import yaml
 from .chains import *
 from .frkl import Frkl
+from .processors import *
 
 
 try:
     set
 except NameError:
-    # noinspection PyDeprecation
+    # noinspection PyDeprecation,PyCompatibility
     from sets import Set as set
 
 try:
+    # noinspection PyCompatibility
     from urllib.request import urlopen
+    # noinspection PyCompatibility
     from urllib.parse import urlparse
 except ImportError:
+    # noinspection PyCompatibility
     from urlparse import urlparse
     from urllib import urlopen
 
 __metaclass__ = type
 
 log = logging.getLogger("frkl")
+
 
 def load_collector(name, init_params=None):
     """Loading a collector extension.
@@ -55,11 +58,12 @@ def load_collector(name, init_params=None):
         namespace='frkl.collector',
         name=name,
         invoke_on_load=True,
-        invoke_args=(init_params, ))
+        invoke_args=(init_params,))
     log.debug("Registered plugins: {}".format(", ".join(
         ext.name for ext in mgr.extensions)))
 
     return mgr
+
 
 # ----------------------------------------------------------------
 # callbacks / collectors
@@ -88,10 +92,6 @@ class FrklCallback(object):
 
         with open(init_file) as f:
             init_config = yaml.load(f)
-            #content = f.read()
-
-
-        #init_config = yaml.safe_load(content)
 
         if isinstance(init_config, (list, tuple)):
             processor_chain = init_config
@@ -131,7 +131,7 @@ class FrklCallback(object):
 
         collector = load_collector(collector_name, collector_init).driver
         bootstrap = Frkl(processor_chain,
-                         COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
+            COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
         config_frkl = bootstrap.process(FrklFactoryCallback())
 
         config_frkl.set_configs(configs)
@@ -197,9 +197,12 @@ class MergeDictResultCallback(FrklCallback):
     """Simple callback, merges all configs to *one* internal dict."""
 
     def __init__(self, init_params=None):
-        super(MergeDictResultCallback, self).__init__(init_params)
+
         self.result_dict = {}
+        self.append_keys = None
         self.append_keys_map = {}
+
+        super(MergeDictResultCallback, self).__init__(init_params)
 
     def validate_init(self):
         """Optional method that can be overwritten to process and validate input arguments for this processor.
@@ -216,8 +219,6 @@ class MergeDictResultCallback(FrklCallback):
 
     def get_dict_detail(self, target_dict, detail_path):
 
-        if not target_dict:
-            return default_value
         temp = target_dict
         for level in detail_path.split("/"):
             temp = temp.get(level, {})
@@ -308,4 +309,3 @@ class FrklFactoryCallback(FrklCallback):
 
     def result(self):
         return Frkl([], self.bootstrap_chain)
-
