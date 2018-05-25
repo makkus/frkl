@@ -8,8 +8,8 @@ import sys
 import click
 from six import string_types
 
-from .frkl_factory import get_configs, factory, init
 from . import __version__ as VERSION
+from .frkl_factory import factory
 
 log = logging.getLogger("frkl")
 
