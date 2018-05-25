@@ -5,7 +5,7 @@ Overview
 
 .. image:: https://img.shields.io/pypi/v/frkl.svg
            :target: https://pypi.python.org/pypi/frkl
-           :alt: pyup
+           :alt: pypi
 
 .. image:: https://img.shields.io/travis/makkus/frkl.svg
            :target: https://travis-ci.org/makkus/frkl
@@ -22,6 +22,10 @@ Overview
 .. image:: https://coveralls.io/repos/github/makkus/frkl/badge.svg?branch=master
            :target: https://coveralls.io/github/makkus/frkl?branch=master
            :alt: coveralls
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+           :target: https://github.com/ambv/black
+           :alt: codestyle
 
 *elastic configuration files*
 
