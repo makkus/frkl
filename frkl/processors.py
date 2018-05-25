@@ -841,12 +841,12 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
         if not abbrevs:
             if add_default_abbrevs:
-                self.abbrevs = DEFAULT_URL_ABBREVIATIONS
+                self.abbrevs = DEFAULT_URL_ABBREVIATIONS_FILE
             else:
                 self.abbrevs = {}
         else:
             if add_default_abbrevs:
-                self.abbrevs = copy.deepcopy(DEFAULT_URL_ABBREVIATIONS)
+                self.abbrevs = copy.deepcopy(DEFAULT_URL_ABBREVIATIONS_FILE)
                 dict_merge(self.abbrevs, abbrevs, copy_dct=False)
             else:
                 self.abbrevs = copy.deepcopy(abbrevs)

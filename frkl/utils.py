@@ -4,6 +4,9 @@ import logging
 
 from six import string_types
 
+from .frkl import Frkl
+from .processors import UrlAbbrevProcessor
+
 log = logging.getLogger("frkl")
 
 
