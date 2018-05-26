@@ -11,6 +11,7 @@ log = logging.getLogger("frkl")
 
 
 def expand_string_to_git_details(value, default_abbrevs):
+
     fail_msg = None
     branch = None
     opt_split_string = "::"

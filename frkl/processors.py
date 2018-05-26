@@ -889,6 +889,21 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
         """
 
+        # check if string contains branch information
+        branch = None
+        opt_split_string = "::"
+        if opt_split_string in config:
+            tokens = config.split(opt_split_string)
+            opt = tokens[1:-1]
+            if not opt:
+                raise Exception(
+                "Not a valid url, needs at least 2 split strings ('{}')".format(
+                opt_split_string
+                ))
+            if len(opt) != 1:
+                raise Exception("Not a valid url, can only have 1 branch: {}".format(value))
+            branch = opt[0]
+
         prefix, sep, rest = config.partition(":")
 
         if self.opt_split_string in rest:
@@ -940,6 +955,15 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
                 if opt:
                     opt_appendix = "::".join(opt)
+
+                if is_templated(result_string):
+
+                    if branch:
+                        repl_dict = {"branch": branch}
+                    else:
+                        repl_dict = {"branch": "master"}
+
+                    result_string = replace_string(result_string, repl_dict, local_env_vars_key=False)
 
                 if self.verbose:
                     print("Expanding '{}' -> '{}'".format(config, result_string))
