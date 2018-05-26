@@ -28,3 +28,11 @@ deploy:
       tags: true
       repo: makkus/frkl
       python: 2.7
+
+notifications:
+  email:
+    recipients:
+      - build@frkl.io
+    on_success: change # default: change
+    on_failure: change # default: always
+
