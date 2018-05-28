@@ -19,8 +19,8 @@ Overview
            :target: https://pyup.io/repos/github/makkus/frkl/
            :alt: updates
 
-.. image:: https://coveralls.io/repos/github/makkus/frkl/badge.svg?branch=master
-           :target: https://coveralls.io/github/makkus/frkl?branch=master
+.. image:: https://coveralls.io/repos/github/makkus/frkl/badge.svg?branch=develop
+           :target: https://coveralls.io/github/makkus/frkl?branch=develop
            :alt: coveralls
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
