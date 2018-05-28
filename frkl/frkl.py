@@ -175,3 +175,31 @@ L        """
                 configs_copy,
                 context,
             )
+
+
+# several useful or common helper methods
+
+def load_from_url_or_path(urls):
+    """Simple wrapper to create a list of dictionaries from a local or remote file.
+
+    If input is a single url, a single list will be returned. If a list,
+    the result will be a list of lists.
+
+    Args:
+        urls (list): a list of paths and/or urls
+    Returns:
+        list: a list of dictionaries, representing the content of the input files
+    """
+
+    single_input = False
+    if isinstance(urls, string_types):
+        single_input = True
+        urls = [urls]
+
+    f = Frkl(urls, DEFAULT_PROCESSOR_CHAIN)
+    result = f.process()
+
+    if single_input:
+        return result[0]
+    else:
+        return result

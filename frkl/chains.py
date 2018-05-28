@@ -3,6 +3,8 @@
 # python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from six import string_types
+
 from .defaults import *
 from .processors import (
     EnsurePythonObjectProcessor,
@@ -36,3 +38,6 @@ BOOTSTRAP_PROCESSOR_CHAIN = [
     EnsurePythonObjectProcessor(),
     FrklProcessor(BOOTSTRAP_FRKL_FORMAT),
 ]
+
+
+
