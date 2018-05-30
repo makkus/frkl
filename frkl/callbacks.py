@@ -255,6 +255,34 @@ class MergeDictResultCallback(FrklCallback):
 
         return self.result_dict
 
+class SetResultCallback(FrklCallback):
+    """Simple callback to create a set out of a list."""
+
+    def __init__(self, init_params=None):
+
+        self.return_list = None
+        super(SetResultCallback, self).__init__(init_params)
+
+        self.result_set = set()
+
+
+    def validate_init(self):
+
+        self.return_list = self.init_params.get("return_list", False)
+
+        return True
+
+    def callback(self, process_result):
+
+        self.result_set.add(process_result)
+
+    def result(self):
+
+        if self.return_list:
+            return list(self.result_set)
+        else:
+            return self.result_set
+
 
 class MergeResultCallback(FrklCallback):
     """Simple callback, just appends all configs to an internal list."""
