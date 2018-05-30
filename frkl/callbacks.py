@@ -31,7 +31,7 @@ __metaclass__ = type
 log = logging.getLogger("frkl")
 
 
-def load_collector(name, init_params=None):
+def load_collector(name, **init_params):
     """Loading a collector extension.
 
     Args:
@@ -41,9 +41,6 @@ def load_collector(name, init_params=None):
     Returns:
       FrklCallback: the extension collector
     """
-
-    if not init_params:
-        init_params = {}
 
     log2 = logging.getLogger("stevedore")
     out_hdlr = logging.StreamHandler(sys.stdout)
@@ -58,7 +55,7 @@ def load_collector(name, init_params=None):
         namespace="frkl.collector",
         name=name,
         invoke_on_load=True,
-        invoke_args=(init_params,),
+        invoke_kwds=init_params,
     )
     log.debug(
         "Registered plugins: {}".format(", ".join(ext.name for ext in mgr.extensions))
@@ -131,7 +128,7 @@ class FrklCallback(object):
         if collector_name == "default":
             collector_name = "merge"
 
-        collector = load_collector(collector_name, collector_init).driver
+        collector = load_collector(collector_name, **collector_init).driver
         bootstrap = Frkl(processor_chain, COLLECTOR_INIT_BOOTSTRAP_PROCESSOR_CHAIN)
         config_frkl = bootstrap.process(FrklFactoryCallback())
 
@@ -142,24 +139,9 @@ class FrklCallback(object):
 
     init = staticmethod(init)
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        if init_params is None:
-            init_params = {}
         self.init_params = init_params
-
-        msg = self.validate_init()
-        if msg is not True:
-            raise FrklConfigException(msg)
-
-    def validate_init(self):
-        """Optional method that can be overwritten to process and validate input arguments for this processor.
-
-        Returns:
-          bool: whether validation succeeded or not
-        """
-
-        return True
 
     @abc.abstractmethod
     def callback(self, item):
@@ -197,26 +179,15 @@ class FrklCallback(object):
 class MergeDictResultCallback(FrklCallback):
     """Simple callback, merges all configs to *one* internal dict."""
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
+
+        super(MergeDictResultCallback, self).__init__(**init_params)
 
         self.result_dict = {}
-        self.append_keys = None
-        self.append_keys_map = {}
-
-        super(MergeDictResultCallback, self).__init__(init_params)
-
-    def validate_init(self):
-        """Optional method that can be overwritten to process and validate input arguments for this processor.
-
-        Returns:
-          bool: whether validation succeeded or not
-        """
-
-        self.append_keys = self.init_params.get("append_keys", [])
+        self.append_keys = init_params.get("append_keys", [])
         if not isinstance(self.append_keys, (list, tuple)):
             self.append_keys = [self.append_keys]
-
-        return True
+        self.append_keys_map = {}
 
     def get_dict_detail(self, target_dict, detail_path):
 
@@ -255,22 +226,16 @@ class MergeDictResultCallback(FrklCallback):
 
         return self.result_dict
 
+
 class SetResultCallback(FrklCallback):
     """Simple callback to create a set out of a list."""
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        self.return_list = None
-        super(SetResultCallback, self).__init__(init_params)
+        super(SetResultCallback, self).__init__(**init_params)
 
         self.result_set = set()
-
-
-    def validate_init(self):
-
-        self.return_list = self.init_params.get("return_list", False)
-
-        return True
+        self.return_list = init_params.get("return_list", False)
 
     def callback(self, process_result):
 
@@ -287,8 +252,8 @@ class SetResultCallback(FrklCallback):
 class MergeResultCallback(FrklCallback):
     """Simple callback, just appends all configs to an internal list."""
 
-    def __init__(self, init_params=None):
-        super(MergeResultCallback, self).__init__(init_params)
+    def __init__(self, **init_params):
+        super(MergeResultCallback, self).__init__(**init_params)
 
         self.result_list = []
 
@@ -303,8 +268,8 @@ class ExtendResultCallback(FrklCallback):
     """Simple callback, extends an internal list with the processing results.
     """
 
-    def __init__(self, init_params=None):
-        super(ExtendResultCallback, self).__init__(init_params)
+    def __init__(self, **init_params):
+        super(ExtendResultCallback, self).__init__(**init_params)
         self.result_list = []
 
     def callback(self, process_result):
@@ -318,8 +283,8 @@ class FrklFactoryCallback(FrklCallback):
     """Helper callback method, creates a new Frkl object by processing a list of processor init dicts.
     """
 
-    def __init__(self, init_params=None):
-        super(FrklFactoryCallback, self).__init__(init_params)
+    def __init__(self, **init_params):
+        super(FrklFactoryCallback, self).__init__(**init_params)
         self.processors = []
         self.bootstrap_chain = []
 
@@ -337,7 +302,7 @@ class FrklFactoryCallback(FrklCallback):
                 ext_name, ext_init_params
             )
         )
-        ext = load_extension(ext_name, ext_init_params)
+        ext = load_extension(ext_name, **ext_init_params)
         self.bootstrap_chain.append(ext.driver)
 
     def result(self):

@@ -83,8 +83,8 @@ TEST_ENSURE_FAIL_URLS = [
 ]
 
 TEST_PROCESSOR_CHAIN_1 = [
-    RegexProcessor({"regexes": TEST_REGEXES}),
-    UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS}),
+    RegexProcessor(**{"regexes": TEST_REGEXES}),
+    UrlAbbrevProcessor(**{"abbrevs": TEST_CUSTOM_ABBREVS}),
 ]
 TEST_CHAIN_1_URLS = [
     (
@@ -105,12 +105,12 @@ TEST_CHAIN_1_URLS = [
     ),
 ]
 
-REGEX_CHAIN = [RegexProcessor({"regexes": TEST_REGEXES})]
+REGEX_CHAIN = [RegexProcessor(**{"regexes": TEST_REGEXES})]
 JINJA_CHAIN = [
     EnsureUrlProcessor(),
-    Jinja2TemplateProcessor({"template_values": TEST_JINJA_DICT}),
+    Jinja2TemplateProcessor(**{"template_values": TEST_JINJA_DICT}),
 ]
-ABBREV_CHAIN = [UrlAbbrevProcessor({"abbrevs": TEST_CUSTOM_ABBREVS})]
+ABBREV_CHAIN = [UrlAbbrevProcessor(**{"abbrevs": TEST_CUSTOM_ABBREVS})]
 ENSURE_URL_CHAIN = [EnsureUrlProcessor()]
 ENSURE_PYTHON_CHAIN = [EnsureUrlProcessor(), EnsurePythonObjectProcessor()]
 
@@ -124,14 +124,14 @@ FRKLIZE_CHAIN = [
     EnsureUrlProcessor(),
     EnsurePythonObjectProcessor(),
     LoadMoreConfigsProcessor(),
-    FrklProcessor(FRKL_INIT_PARAMS),
+    FrklProcessor(**FRKL_INIT_PARAMS),
 ]
 ABBREV_FRKLIZE_CHAIN = [
     UrlAbbrevProcessor(),
     EnsureUrlProcessor(),
     EnsurePythonObjectProcessor(),
     LoadMoreConfigsProcessor(),
-    FrklProcessor(FRKL_INIT_PARAMS),
+    FrklProcessor(**FRKL_INIT_PARAMS),
 ]
 
 PROCESSOR_TESTS = [
@@ -262,14 +262,14 @@ def test_ensure_fail_url_processor(input_url):
 
 @pytest.mark.parametrize("config, expected", [({"a": 1}, {"vars": {"a": 1}})])
 def test_frkl_valid_config(config, expected):
-    frkl_obj = FrklProcessor(FRKL_INIT_PARAMS)
+    frkl_obj = FrklProcessor(**FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config, {"last_call": False})
     frkl_obj.process()
 
 
 @pytest.mark.parametrize("config", [({"a": 1, "vars": 2}), ({"tasks": 1, "childs": 1})])
 def test_frkl_invalid_config(config):
-    frkl_obj = FrklProcessor(FRKL_INIT_PARAMS)
+    frkl_obj = FrklProcessor(**FRKL_INIT_PARAMS)
     frkl_obj.set_current_config(config, {"last_call": False})
     with pytest.raises(FrklConfigException):
         for i in frkl_obj.process():
@@ -347,7 +347,7 @@ def test_files_collector(test_name):
 
     frkl_obj = factory(chain_file, input_files)
     test12_init = {"append_keys": "vars/a"}
-    result_obj = frkl_obj.process(MergeDictResultCallback(test12_init))
+    result_obj = frkl_obj.process(MergeDictResultCallback(**test12_init))
 
     # pprint.pprint(expected_obj)
     # print("XXX")

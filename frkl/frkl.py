@@ -179,6 +179,7 @@ L        """
 
 # several useful or common helper methods
 
+
 def load_from_url_or_path(urls):
     """Simple wrapper to create a list of dictionaries from a local or remote file.
 

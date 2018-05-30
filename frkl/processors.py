@@ -55,7 +55,7 @@ log = logging.getLogger("frkl")
 
 # extensions
 # ------------------------------------------------------------------------
-def load_extension(name, init_params=None):
+def load_extension(name, **init_params):
     """Loading a processor extension.
 
     Args:
@@ -66,9 +66,6 @@ def load_extension(name, init_params=None):
       FrklConfig: the extension object
     """
 
-    if not init_params:
-        init_params = {}
-
     log2 = logging.getLogger("stevedore")
     out_hdlr = logging.StreamHandler(sys.stdout)
     out_hdlr.setFormatter(logging.Formatter("PLUGIN ERROR -> %(message)s"))
@@ -78,9 +75,13 @@ def load_extension(name, init_params=None):
 
     log.debug("Loading extension...")
 
+    print(name)
+    print(init_params)
+
     mgr = stevedore.driver.DriverManager(
-        namespace="frkl.frk", name=name, invoke_on_load=True, invoke_args=(init_params,)
+        namespace="frkl.frk", name=name, invoke_on_load=True, invoke_kwds=init_params
     )
+
     log.debug(
         "Registered plugins: {}".format(", ".join(ext.name for ext in mgr.extensions))
     )
@@ -95,32 +96,17 @@ class ConfigProcessor(object):
     In order to enable configuration urls and content to be written as quickly and minimal as possible, frkl supports pluggable processors that can manipulate the configuration urls and contents. For example, urls can be abbreviated 'gh' -> 'https://raw.githubusercontent.com/blahblah'.
     """
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
         """
         Args:
           init_params (dict): arguments to initialize the processor
         """
 
-        if init_params is None:
-            init_params = {}
         self.init_params = init_params
 
         self.current_input_config = None
         self.current_context = None
         self.last_call = False
-
-        msg = self.validate_init()
-        if msg is not True:
-            raise FrklConfigException(msg)
-
-    def validate_init(self):
-        """Optional method that can be overwritten to process and validate input arguments for this processor.
-
-        Returns:
-          bool: whether validation succeeded or not
-        """
-
-        return True
 
     def get_input_format(self):
         """Returns the format of the accepted input.
@@ -261,6 +247,7 @@ class EnsureUrlProcessor(ConfigProcessor):
         result = self.get_config(self.current_input_config)
         return result
 
+
 class ParentPathProcessor(ConfigProcessor):
 
     def get_output_format(self):
@@ -273,12 +260,13 @@ class ParentPathProcessor(ConfigProcessor):
 
         url = self.current_input_config
 
-        if not is_url_or_abbrev(url) and not os.path.isabs((url)) :
+        if not is_url_or_abbrev(url) and not os.path.isabs((url)):
             url = os.path.abspath(url)
 
         parent = os.path.dirname(url)
 
         return parent
+
 
 class EnsurePythonObjectProcessor(ConfigProcessor):
     """Makes sure the provided string is either valid yaml (or json -- not implemented yet), and converts it into a python object.
@@ -310,26 +298,22 @@ class ToYamlProcessor(ConfigProcessor):
 class IdProcessor(ConfigProcessor):
     """Adds an id to every config item."""
 
-    def __init__(self, init_params=None):
-        self.id_type = None
-        self.id_name = None
-        self.id_key = None
-        self.current_id = None
+    def __init__(self, **init_params):
 
-        super(IdProcessor, self).__init__(init_params)
+        super(IdProcessor, self).__init__(**init_params)
+        self.id_type = init_params.get("id_type", "enumerate")
+        self.id_name = init_params.get("id_name", "id")
+        self.id_key = init_params.get("id_key", False)
+
+        if not self.id_key:
+            raise FrklConfigException("No 'id_key' value provided for IdProcessor")
+
+        self.current_id = 0
 
     def get_input_format(self):
         return PYTHON_FORMAT
 
     def validate_init(self):
-        self.id_type = self.init_params.get("id_type", "enumerate")
-        self.id_name = self.init_params.get("id_name", "id")
-        self.id_key = self.init_params.get("id_key", False)
-
-        if not self.id_key:
-            return "No 'id_key' value provided for IdProcessor"
-
-        self.current_id = 0
 
         return True
 
@@ -343,9 +327,9 @@ class IdProcessor(ConfigProcessor):
 class MergeProcessor(ConfigProcessor):
     """Gathers all configs and returns a list of all results as single element."""
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        super(MergeProcessor, self).__init__(init_params)
+        super(MergeProcessor, self).__init__(**init_params)
 
     def get_input_format(self):
 
@@ -370,24 +354,15 @@ class DictInjectionProcessor(ConfigProcessor):
     """A processor to 'inject' dictionaries and dictionary values into other dictionaries, according to predefined rules.
     """
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        self.injection_dicts = None
-        self.on_top = None
-        self.separator = None
-
-        super(DictInjectionProcessor, self).__init__(init_params)
-
-    def validate_init(self):
-
-        self.injection_dicts = self.init_params["injection_dicts"]
+        super(DictInjectionProcessor, self).__init__(**init_params)
+        self.injection_dicts = init_params["injection_dicts"]
         if isinstance(self.injection_dicts, dict):
             self.injection_dicts = [self.injection_dicts]
 
-        self.on_top = self.init_params.get("merge_on_top", False)
-        self.separator = self.init_params.get("key_separator", "/")
-
-        return True
+        self.on_top = init_params.get("merge_on_top", False)
+        self.separator = init_params.get("key_separator", "/")
 
     def get_input_format(self):
 
@@ -434,31 +409,24 @@ class FrklProcessor(ConfigProcessor):
     page in the docs: link (XXX)
     """
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        self.stem_key = None
-        self.default_leaf_key = None
-        self.default_leaf_default_key = None
-        self.other_valid_keys = None
-        self.default_leaf_key_map = None
-        self.all_keys = None
-        self.use_context = None
-        self.values_so_far = None
+        # self.stem_key = None
+        # self.default_leaf_key = None
+        # self.default_leaf_default_key = None
+        # self.other_valid_keys = None
+        # self.default_leaf_key_map = None
+        # self.all_keys = None
+        # self.use_context = None
+        # self.values_so_far = None
 
-        super(FrklProcessor, self).__init__(init_params)
-        self.configs = []
+        super(FrklProcessor, self).__init__(**init_params)
 
-    def get_input_format(self):
-
-        return PYTHON_FORMAT
-
-    def validate_init(self):
-
-        self.stem_key = self.init_params[STEM_KEY_NAME]
-        self.default_leaf_key = self.init_params[DEFAULT_LEAF_KEY_NAME]
-        self.default_leaf_default_key = self.init_params[DEFAULT_LEAF_DEFAULT_KEY_NAME]
-        self.other_valid_keys = self.init_params.get(OTHER_VALID_KEYS_NAME, [])
-        self.default_leaf_key_map = self.init_params[DEFAULT_LEAF_KEY_MAP_NAME]
+        self.stem_key = init_params[STEM_KEY_NAME]
+        self.default_leaf_key = init_params[DEFAULT_LEAF_KEY_NAME]
+        self.default_leaf_default_key = init_params[DEFAULT_LEAF_DEFAULT_KEY_NAME]
+        self.other_valid_keys = init_params.get(OTHER_VALID_KEYS_NAME, [])
+        self.default_leaf_key_map = init_params[DEFAULT_LEAF_KEY_MAP_NAME]
         if isinstance(self.default_leaf_key_map, string_types):
             if "/" in self.default_leaf_key_map:
                 tokens = self.default_leaf_key_map.split("/")
@@ -520,22 +488,26 @@ class FrklProcessor(ConfigProcessor):
         for item in self.default_leaf_key_map.values():
             self.all_keys.add(item[0])
 
-        self.use_context = self.init_params.get("use_context", False)
+        self.use_context = init_params.get("use_context", False)
         if self.use_context and isinstance(self.use_context, bool):
             self.use_context = FRKL_CONTEXT_DEFAULT_KEY
         elif self.use_context and not isinstance(self.use_context, string_types):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".format(
-                    self.init_params
+                    init_params
                 )
             )
 
-        if START_VALUES_NAME in self.init_params.keys():
-            self.values_so_far = self.init_params[START_VALUES_NAME]
+        if START_VALUES_NAME in init_params.keys():
+            self.values_so_far = init_params[START_VALUES_NAME]
         else:
             self.values_so_far = {}
 
-        return True
+        self.configs = []
+
+    def get_input_format(self):
+
+        return PYTHON_FORMAT
 
     def new_config(self):
 
@@ -673,22 +645,12 @@ class Jinja2TemplateProcessor(ConfigProcessor):
         template_values (dict): a dictionary containing the values to replace template strings with
     """
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        self.template_values = None
-        self.use_environment_vars = None
-        self.use_context = None
+        super(Jinja2TemplateProcessor, self).__init__(**init_params)
 
-        super(Jinja2TemplateProcessor, self).__init__(init_params)
-
-    def get_input_format(self):
-
-        return STRING_FORMAT
-
-    def validate_init(self):
-
-        self.template_values = self.init_params.get("template_values", {})
-        self.use_environment_vars = self.init_params.get("use_environment_vars", False)
+        self.template_values = init_params.get("template_values", {})
+        self.use_environment_vars = init_params.get("use_environment_vars", False)
         if self.use_environment_vars and isinstance(self.use_environment_vars, bool):
             self.use_environment_vars = ENVIRONMENT_VARS_DEFAULT_KEY
         elif self.use_environment_vars and not isinstance(
@@ -696,21 +658,23 @@ class Jinja2TemplateProcessor(ConfigProcessor):
         ):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".format(
-                    self.init_params
+                    init_params
                 )
             )
 
-        self.use_context = self.init_params.get("use_context", False)
+        self.use_context = init_params.get("use_context", False)
         if self.use_context and isinstance(self.use_context, bool):
             self.use_context = FRKL_CONTEXT_DEFAULT_KEY
         elif self.use_context and not isinstance(self.use_context, string_types):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".format(
-                    self.init_params
+                    init_params
                 )
             )
 
-        return True
+    def get_input_format(self):
+
+        return STRING_FORMAT
 
     def process_current_config(self):
 
@@ -739,19 +703,14 @@ class YamlTextSplitProcessor(ConfigProcessor):
         keywords (list): a list of keywords
     """
 
-    def __init(self, init_params=None):
+    def __init__(self, **init_params):
 
-        self.keywords = None
-        self.current_lines = None
-        super(YamlTextSplitProcessor, self).__init__(init_params)
+        super(YamlTextSplitProcessor, self).__init__(**init_params)
+        self.keywords = init_params["keywords"]
+        self.current_lines = []
 
     def get_input_format(self):
         return STRING_FORMAT
-
-    def validate_init(self):
-        self.keywords = self.init_params["keywords"]
-        self.current_lines = []
-        return True
 
     def process_current_config(self):
 
@@ -781,16 +740,13 @@ class RegexProcessor(ConfigProcessor):
         regexes (dict): a map of regexes and their replacements
     """
 
-    def __init__(self, init_params=None):
-        self.regexes = None
-        super(RegexProcessor, self).__init__(init_params)
+    def __init__(self, **init_params):
+
+        super(RegexProcessor, self).__init__(**init_params)
+        self.regexes = init_params["regexes"]
 
     def get_input_format(self):
         return STRING_FORMAT
-
-    def validate_init(self):
-        self.regexes = self.init_params["regexes"]
-        return True
 
     def process_current_config(self):
         new_config = self.current_input_config
@@ -841,21 +797,12 @@ class UrlAbbrevProcessor(ConfigProcessor):
 
     """
 
-    def __init__(self, init_params=None):
+    def __init__(self, **init_params):
 
-        self.abbrevs = None
-        self.verbose = None
-        super(UrlAbbrevProcessor, self).__init__(init_params)
-        self.opt_split_string = "::"
+        super(UrlAbbrevProcessor, self).__init__(**init_params)
 
-    def get_input_format(self):
-
-        return STRING_FORMAT
-
-    def validate_init(self):
-
-        abbrevs = self.init_params.get("abbrevs", False)
-        add_default_abbrevs = self.init_params.get("add_default_abbrevs", True)
+        abbrevs = init_params.get("abbrevs", False)
+        add_default_abbrevs = init_params.get("add_default_abbrevs", True)
 
         if not abbrevs:
             if add_default_abbrevs:
@@ -869,9 +816,12 @@ class UrlAbbrevProcessor(ConfigProcessor):
             else:
                 self.abbrevs = copy.deepcopy(abbrevs)
 
-        self.verbose = self.init_params.get("verbose", False)
+        self.verbose = init_params.get("verbose", False)
+        self.opt_split_string = "::"
 
-        return True
+    def get_input_format(self):
+
+        return STRING_FORMAT
 
     def process_current_config(self):
 

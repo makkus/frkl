@@ -11,6 +11,7 @@ from .callbacks import SetResultCallback
 
 log = logging.getLogger("frkl")
 
+
 def expand_string_to_git_details(value, default_abbrevs):
 
     fail_msg = None
@@ -84,11 +85,15 @@ def get_url_parents(urls, abbrevs=False, return_list=False):
     else:
         if abbrevs is True:
             abbrevs = DEFAULT_URL_ABBREVIATIONS_FILE
-        chain = [UrlAbbrevProcessor(init_params={"abbrevs": abbrevs, "add_default_abbrevs": False}), ParentPathProcessor()]
+        chain = [
+            UrlAbbrevProcessor(
+                init_params={"abbrevs": abbrevs, "add_default_abbrevs": False}
+            ),
+            ParentPathProcessor(),
+        ]
     callback = SetResultCallback(init_params={"return_list": return_list})
 
     frkl_obj = Frkl(urls, chain)
     result = frkl_obj.process(callback)
 
     return result
-
