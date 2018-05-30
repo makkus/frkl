@@ -261,6 +261,24 @@ class EnsureUrlProcessor(ConfigProcessor):
         result = self.get_config(self.current_input_config)
         return result
 
+class ParentPathProcessor(ConfigProcessor):
+
+    def get_output_format(self):
+        return STRING_FORMAT
+
+    def get_input_format(self):
+        return STRING_FORMAT
+
+    def process_current_config(self):
+
+        url = self.current_input_config
+
+        if not is_url_or_abbrev(url) and not os.path.isabs((url)) :
+            url = os.path.abspath(url)
+
+        parent = os.path.dirname(url)
+
+        return parent
 
 class EnsurePythonObjectProcessor(ConfigProcessor):
     """Makes sure the provided string is either valid yaml (or json -- not implemented yet), and converts it into a python object.

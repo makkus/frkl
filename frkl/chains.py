@@ -20,6 +20,7 @@ DEFAULT_PROCESSOR_CHAIN = [
     EnsurePythonObjectProcessor(),
 ]
 
+
 # format of processor init dicts
 BOOTSTRAP_FRKL_FORMAT = {
     STEM_KEY_NAME: "processors",
