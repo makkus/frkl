@@ -270,13 +270,26 @@ class ParentPathProcessor(ConfigProcessor):
 
 class EnsurePythonObjectProcessor(ConfigProcessor):
     """Makes sure the provided string is either valid yaml (or json -- not implemented yet), and converts it into a python object.
-  """
+
+    Args:
+        safe (bool): whether to use the 'safe' type for the yaml parser. This will destroy the order of any source dicts.
+    """
+
+    def __init__(self, safe_load=True, **kwargs):
+
+        super(EnsurePythonObjectProcessor, self).__init__(**kwargs)
+        self.safe_load = safe_load
 
     def get_output_format(self):
         return "PYTHON"
 
     def process_current_config(self):
-        config_obj = yaml.load(self.current_input_config)
+
+        if not self.safe_load:
+            temp = StringYAML()
+            config_obj = temp.load(self.current_input_config)
+        else:
+            config_obj = yaml.load(self.current_input_config)
         return config_obj
 
 
@@ -643,34 +656,47 @@ class Jinja2TemplateProcessor(ConfigProcessor):
 
     Args:
         template_values (dict): a dictionary containing the values to replace template strings with
+        use_environment_vars (bool): whether to also use current environment variables  in the replacement dict. If True, it'll stored under the key 'LOCAL_ENV', if string, that will be used as key
+        use_context (bool): whether to also use the frkl context in the replacement dict.  If True, it'll stored under the key 'frkl_vars', if string, that will be used as key
+        delimiter_profile (dict): the jinja2 delimters
+        **init_params (dict): additional config for the parent class
     """
 
-    def __init__(self, **init_params):
+    def __init__(
+        self,
+        template_values=None,
+        use_environment_vars=False,
+        use_context=False,
+        delimiter_profile=JINJA_DELIMITER_PROFILES["default"],
+        **init_params
+    ):
 
         super(Jinja2TemplateProcessor, self).__init__(**init_params)
-
-        self.template_values = init_params.get("template_values", {})
-        self.use_environment_vars = init_params.get("use_environment_vars", False)
+        if not template_values:
+            template_values = {}
+        self.template_values = template_values
+        self.use_environment_vars = use_environment_vars
         if self.use_environment_vars and isinstance(self.use_environment_vars, bool):
-            self.use_environment_vars = ENVIRONMENT_VARS_DEFAULT_KEY
+            self.use_environment_vars = DEFAULT_LOCAL_ENV_VARS_KEY
         elif self.use_environment_vars and not isinstance(
             self.use_environment_vars, string_types
         ):
             raise FrklConfigException(
-                "'use_context' keyword needs to be of type bool or string: {}".format(
-                    init_params
+                "'use_environment_vars' keyword needs to be of type bool or string: {}".format(
+                    use_environment_vars
                 )
             )
 
-        self.use_context = init_params.get("use_context", False)
+        self.use_context = use_context
         if self.use_context and isinstance(self.use_context, bool):
             self.use_context = FRKL_CONTEXT_DEFAULT_KEY
         elif self.use_context and not isinstance(self.use_context, string_types):
             raise FrklConfigException(
                 "'use_context' keyword needs to be of type bool or string: {}".format(
-                    init_params
+                    use_context
                 )
             )
+        self.delimiter_profile = delimiter_profile
 
     def get_input_format(self):
 
@@ -678,22 +704,23 @@ class Jinja2TemplateProcessor(ConfigProcessor):
 
     def process_current_config(self):
 
-        rtemplate = Environment(loader=BaseLoader()).from_string(
-            self.current_input_config
-        )
+        old_string = self.current_input_config
+
         env = {}
-        if self.use_environment_vars:
-            envs = {self.use_environment_vars: os.environ}
-            dict_merge(env, envs, copy_dct=False)
 
         if self.use_context:
             frkl_vars = self.current_context.get(self.use_context, {})
             dict_merge(env, frkl_vars, copy_dct=False)
 
         dict_merge(env, self.template_values, copy_dct=False)
-        config_string = rtemplate.render(env)
 
-        return config_string
+        new_string = replace_string(
+            old_string,
+            replacement_dict=env,
+            local_env_vars_key=self.use_environment_vars,
+            **self.delimiter_profile
+        )
+        return new_string
 
 
 class YamlTextSplitProcessor(ConfigProcessor):

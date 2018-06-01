@@ -32,12 +32,13 @@ log = logging.getLogger("frkl")
 
 class Frkl(object):
 
-    def __init__(self, configs=None, processor_chain=DEFAULT_PROCESSOR_CHAIN):
+    def __init__(self, configs=None, processor_chain=LOAD_OBJECT_FROM_URL_CHAIN, max_items=9999):
         """Base object that holds the configuration.
 
         Args:
           configs (list): list of configurations, will be processed in the order they come in
           processor_chain (list): processor chain to use, defaults to [:class:`UrlAbbrevProcessor`]
+          max_items (int): max number of items to allow, mostly used to catch bugs in the code, contact the developer if you hit this number
 L        """
 
         if configs is None:
@@ -48,6 +49,7 @@ L        """
 
         self.configs = []
         self.set_configs(configs)
+        self.max_items = max_items
 
     def set_configs(self, configs):
         """Sets the configuration(s) for this Frkl object.
@@ -99,9 +101,9 @@ L        """
 
         while configs_copy:
 
-            if len(configs_copy) > 1024:
+            if len(configs_copy) > self.max_items:
                 raise FrklConfigException(
-                    "More than 1024 configs, this looks like a loop, exiting."
+                    "More than {} configs, this looks like a loop, exiting. Contact the developer to up that limit if you think this is an issue.".format(self.max_items)
                 )
 
             config = configs_copy.pop(0)
@@ -180,14 +182,17 @@ L        """
 # several useful or common helper methods
 
 
-def load_from_url_or_path(urls):
+def load_object_from_url_or_path(urls):
     """Simple wrapper to create a list of dictionaries from a local or remote file.
 
     If input is a single url, a single list will be returned. If a list,
     the result will be a list of lists.
 
+    As this uses safe_load with the yaml parser, the dictionary will probably not be in the same order as in the original file.
+
     Args:
         urls (list): a list of paths and/or urls
+        safe_load (bool): whether to use safe load with the yaml parser. This will destroy the order of a dict.
     Returns:
         list: a list of dictionaries, representing the content of the input files
     """
@@ -197,7 +202,45 @@ def load_from_url_or_path(urls):
         single_input = True
         urls = [urls]
 
-    f = Frkl(urls, DEFAULT_PROCESSOR_CHAIN)
+    f = Frkl(urls, LOAD_OBJECT_FROM_URL_CHAIN)
+    result = f.process()
+
+    if single_input:
+        return result[0]
+    else:
+        return result
+
+def load_string_from_url_or_path(urls, template_vars=None, delimiter_profile=JINJA_DELIMITER_PROFILES["default"], use_environment_vars=False, use_context=False, create_python_object=False, safe_load=True):
+    """Simple wrapper to create a list of dictionaries from a local or remote file.
+
+    If input is a single url, a single list will be returned. If a list,
+    the result will be a list of lists.
+
+    Args:
+        urls (list): a list of paths and/or urls
+        template_vars (dict): if not None, the string will be considered a jinja2 template and this dict will be used as replacemnt dict
+        delimiter_profile (dict): the delimiter profile, if templating
+        use_environment_vars (bool, str): whether to also use environment variables when templating
+        use_context (bool, str): whether to also use the frkl context when templating
+        create_python_object (bool): whether to create a python object out of the result string or not
+    Returns:
+        list: a string or python object, representing the content of the input files
+    """
+
+    single_input = False
+    if isinstance(urls, string_types):
+        single_input = True
+        urls = [urls]
+
+    if template_vars:
+        chain = load_templated_string_from_url_chain(template_vars, use_environment_vars=use_environment_vars, use_context=use_context, delimiter_profile=delimiter_profile)
+    else:
+        chain = LOAD_STRING_FROM_URL_CHAIN
+
+    if create_python_object:
+        chain = chain + [EnsurePythonObjectProcessor(safe_load=safe_load)]
+
+    f = Frkl(urls, chain)
     result = f.process()
 
     if single_input:
