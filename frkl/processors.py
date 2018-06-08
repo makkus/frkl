@@ -437,9 +437,14 @@ class FrklProcessor(ConfigProcessor):
 
         self.stem_key = init_params[STEM_KEY_NAME]
         self.default_leaf_key = init_params[DEFAULT_LEAF_KEY_NAME]
-        self.default_leaf_default_key = init_params[DEFAULT_LEAF_DEFAULT_KEY_NAME]
+        self.default_leaf_default_key = init_params.get(DEFAULT_LEAF_DEFAULT_KEY_NAME, None)
+        if self.default_leaf_default_key is None:
+            raise FrklConfigException("No default leaf default key specified.")
         self.other_valid_keys = init_params.get(OTHER_VALID_KEYS_NAME, [])
-        self.default_leaf_key_map = init_params[DEFAULT_LEAF_KEY_MAP_NAME]
+        self.default_leaf_key_map = init_params.get(DEFAULT_LEAF_KEY_MAP_NAME, None)
+        if self.default_leaf_key_map is None:
+            self.default_leaf_key_map = self.default_leaf_key
+
         if isinstance(self.default_leaf_key_map, string_types):
             if "/" in self.default_leaf_key_map:
                 tokens = self.default_leaf_key_map.split("/")
@@ -491,9 +496,9 @@ class FrklProcessor(ConfigProcessor):
                         )
 
         else:
-            return "Type '{}' not supported for move_key_map.".format(
+            raise FrklConfigException("Type '{}' not supported for move_key_map.".format(
                 type(self.default_leaf_key_map)
-            )
+            ))
 
         self.all_keys = set([self.stem_key, self.default_leaf_key])
         self.all_keys.update(self.other_valid_keys)
@@ -572,7 +577,7 @@ class FrklProcessor(ConfigProcessor):
 
                 if not len(config) == 1:
                     raise FrklConfigException(
-                        "This form of configuration is not implemented yet: {} -- current vars: {}".format(
+                        "This form of configuration is not implemented yet (can't have more than one key if key is not among the known keys): {} -- current vars: {}".format(
                             config, current_vars
                         )
                     )
@@ -614,9 +619,39 @@ class FrklProcessor(ConfigProcessor):
 
                             new_value.setdefault(migrate_key, {}).update(value)
                             new_value[migrate_key].update(value)
+                        else:
+                            for key, value in value.items():
+
+                                if key in self.all_keys:
+                                    if isinstance(value, dict):
+                                        dict_merge(new_value.setdefault(key, {}), value, copy_dct=False)
+                                    else:
+                                        new_value[key] = value
+
+                                else:
+                                    if key in self.default_leaf_key_map.keys():
+                                        migrate_key = self.default_leaf_key_map[key][0]
+                                    elif "*" in self.default_leaf_key_map.keys():
+                                        migrate_key = self.default_leaf_key_map["*"][0]
+                                    else:
+                                        raise FrklConfigException(
+                                            "Can't find default_leaf_key to move values of key '{}".format(
+                                                key
+                                            )
+                                        )
+
+                                    if isinstance(value, dict):
+                                        new_value.setdefault(migrate_key, {}).update(value)
+                                        new_value[migrate_key].update(value)
+                                    else:
+                                        new_value.setdefault(migrate_key, {})[key] = value
+
+
+                            #raise FrklConfigException("Mixed keys.")
 
             else:
                 # check whether all keys are allowed
+
                 for key in config.keys():
                     if key not in self.all_keys:
                         raise FrklConfigException(
