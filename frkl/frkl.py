@@ -232,18 +232,14 @@ def load_string_from_url_or_path(urls, template_vars=None, delimiter_profile=JIN
         single_input = True
         urls = [urls]
 
-    if template_vars:
-        chain = load_templated_string_from_url_chain(template_vars, use_environment_vars=use_environment_vars, use_context=use_context, delimiter_profile=delimiter_profile)
-    else:
-        chain = LOAD_STRING_FROM_URL_CHAIN
-
-    if create_python_object:
-        chain = chain + [EnsurePythonObjectProcessor(safe_load=safe_load)]
+    chain = load_templated_string_from_url_chain(template_vars, create_python_object=create_python_object, use_environment_vars=use_environment_vars, use_context=use_context, delimiter_profile=delimiter_profile)
 
     f = Frkl(urls, chain)
     result = f.process()
 
     if single_input:
+        if not result:
+            return []
         return result[0]
     else:
         return result
