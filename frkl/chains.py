@@ -47,7 +47,7 @@ BOOTSTRAP_PROCESSOR_CHAIN = [
     FrklProcessor(**BOOTSTRAP_FRKL_FORMAT),
 ]
 
-def load_templated_string_from_url_chain(url, repl_dict, create_python_object=False, use_environment_vars=False, use_context=False, delimiter_profile=JINJA_DELIMITER_PROFILES["default"]):
+def load_templated_string_from_url_chain(repl_dict, create_python_object=False, use_environment_vars=False, use_context=False, delimiter_profile=JINJA_DELIMITER_PROFILES["default"]):
     """Assemles a chain to load a file (local or remote) and replace templated values in it's content.
 
      Args:

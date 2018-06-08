@@ -10,4 +10,5 @@ from .processors import (
     EnsurePythonObjectProcessor,
     EnsureUrlProcessor,
     LoadMoreConfigsProcessor,
+    FrklProcessor
 )
