@@ -10,7 +10,7 @@ Tests for `frkl` module.
 import pprint
 
 import pytest
-import yaml
+from ruamel.yaml import YAML
 from frutils.frutils import *
 
 from frkl.frkl import *
@@ -19,6 +19,7 @@ from frkl.callbacks import *
 from frkl.processors import *
 
 # from click.testing import CliRunner
+yaml = YAML()
 
 TEST_DICTS = [
     ({}, {}, {}),
