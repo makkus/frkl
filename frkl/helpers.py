@@ -4,21 +4,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+
+from ruamel.yaml import YAML
 from six import string_types
 
-from frkl import Frkl
+from .frkl import Frkl
 from frutils import calculate_cache_location_for_url, ensure_parent_dir
-from frutils.defaults import JINJA_DELIMITER_PROFILES, DEFAULT_DOWNLOAD_CACHE_BASE
-from ruamel.yaml import YAML
+from frutils.defaults import DEFAULT_DOWNLOAD_CACHE_BASE
+from .processors import EnsureUrlProcessor, UrlAbbrevProcessor
 
-from .defaults import *
-from .processors import (
-    EnsurePythonObjectProcessor,
-    EnsureUrlProcessor,
-    FrklProcessor,
-    UrlAbbrevProcessor,
-    Jinja2TemplateProcessor
-)
 
 def get_full_url(abbrev_or_url, abbrevs=None):
     """Expands input to a full url if abbreviated.
@@ -49,7 +43,13 @@ def get_full_url(abbrev_or_url, abbrevs=None):
         return result
 
 
-def download_cached_file(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CACHE_BASE, abbrevs=None, return_content=False):
+def download_cached_file(
+    abbrev_or_url,
+    update=False,
+    cache_base=DEFAULT_DOWNLOAD_CACHE_BASE,
+    abbrevs=None,
+    return_content=False,
+):
     """Downloads a file using a full or abbreviated url.
 
     Args:
@@ -85,7 +85,7 @@ def download_cached_file(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOA
     result = f.process()[0]
 
     ensure_parent_dir(target_file)
-    with open(target_file, 'w') as f:
+    with open(target_file, "w") as f:
         f.write(result)
 
     if return_content:
@@ -94,7 +94,9 @@ def download_cached_file(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOA
         return target_file
 
 
-def content_from_url(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CACHE_BASE, abbrevs=None):
+def content_from_url(
+    abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CACHE_BASE, abbrevs=None
+):
     """Downloads a file using a full or abbreviated url and returns it's content.
 
     Args:
@@ -107,10 +109,19 @@ def content_from_url(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CA
         str: the content of the downloaded file
     """
 
-    content = download_cached_file(abbrev_or_url, update=update, cache_base=cache_base, abbrevs=abbrevs, return_content=True)
+    content = download_cached_file(
+        abbrev_or_url,
+        update=update,
+        cache_base=cache_base,
+        abbrevs=abbrevs,
+        return_content=True,
+    )
     return content
 
-def dict_from_url(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CACHE_BASE, abbrevs=None):
+
+def dict_from_url(
+    abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CACHE_BASE, abbrevs=None
+):
     """Downloads a file using a full or abbreviated url and returns it's content as a python dict.
 
     Args:
@@ -123,12 +134,14 @@ def dict_from_url(abbrev_or_url, update=False, cache_base=DEFAULT_DOWNLOAD_CACHE
         str: the content of the downloaded file
     """
 
-    content = download_cached_file(abbrev_or_url, update=update, cache_base=cache_base, abbrevs=abbrevs, return_content=True)
+    content = download_cached_file(
+        abbrev_or_url,
+        update=update,
+        cache_base=cache_base,
+        abbrevs=abbrevs,
+        return_content=True,
+    )
     yaml = YAML(typ="safe")
 
     result = yaml.load(content)
     return result
-
-
-
-

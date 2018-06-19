@@ -5,16 +5,15 @@ import logging
 from six import string_types
 
 from frutils.defaults import *
-from .frkl import Frkl
-from .processors import UrlAbbrevProcessor, EnsureUrlProcessor, ParentPathProcessor
 from .callbacks import SetResultCallback
+from .frkl import Frkl
+from .processors import ParentPathProcessor, UrlAbbrevProcessor
 
 log = logging.getLogger("frkl")
 
 
 def expand_string_to_git_details(value, default_abbrevs):
 
-    fail_msg = None
     branch = None
     opt_split_string = "::"
     if opt_split_string in value:

@@ -6,25 +6,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .chains import *
 from .processors import *
 
-# import yaml
-
-try:
-    set
-except NameError:
-    # noinspection PyDeprecation,PyCompatibility
-    from sets import Set as set
-
-try:
-    # noinspection PyCompatibility
-    from urllib.request import urlopen
-
-    # noinspection PyCompatibility
-    from urllib.parse import urlparse
-except ImportError:
-    # noinspection PyCompatibility
-    from urlparse import urlparse
-    from urllib import urlopen
-
 __metaclass__ = type
 
 log = logging.getLogger("frkl")
@@ -32,7 +13,9 @@ log = logging.getLogger("frkl")
 
 class Frkl(object):
 
-    def __init__(self, configs=None, processor_chain=LOAD_OBJECT_FROM_URL_CHAIN, max_items=9999):
+    def __init__(
+        self, configs=None, processor_chain=LOAD_OBJECT_FROM_URL_CHAIN, max_items=9999
+    ):
         """Base object that holds the configuration.
 
         Args:
@@ -92,8 +75,6 @@ L        """
 
             callback = MergeResultCallback()
 
-        idx = 0
-
         configs_copy = copy.deepcopy(self.configs)
         context = {"last_call": False}
 
@@ -103,7 +84,9 @@ L        """
 
             if len(configs_copy) > self.max_items:
                 raise FrklConfigException(
-                    "More than {} configs, this looks like a loop, exiting. Contact the developer to up that limit if you think this is an issue.".format(self.max_items)
+                    "More than {} configs, this looks like a loop, exiting. Contact the developer to up that limit if you think this is an issue.".format(
+                        self.max_items
+                    )
                 )
 
             config = configs_copy.pop(0)
@@ -210,7 +193,16 @@ def load_object_from_url_or_path(urls):
     else:
         return result
 
-def load_string_from_url_or_path(urls, template_vars=None, delimiter_profile=JINJA_DELIMITER_PROFILES["default"], use_environment_vars=False, use_context=False, create_python_object=False, safe_load=True):
+
+def load_string_from_url_or_path(
+    urls,
+    template_vars=None,
+    delimiter_profile=JINJA_DELIMITER_PROFILES["default"],
+    use_environment_vars=False,
+    use_context=False,
+    create_python_object=False,
+    safe_load=True,
+):
     """Simple wrapper to create a list of dictionaries from a local or remote file.
 
     If input is a single url, a single list will be returned. If a list,
@@ -232,7 +224,13 @@ def load_string_from_url_or_path(urls, template_vars=None, delimiter_profile=JIN
         single_input = True
         urls = [urls]
 
-    chain = load_templated_string_from_url_chain(template_vars, create_python_object=create_python_object, use_environment_vars=use_environment_vars, use_context=use_context, delimiter_profile=delimiter_profile)
+    chain = load_templated_string_from_url_chain(
+        template_vars,
+        create_python_object=create_python_object,
+        use_environment_vars=use_environment_vars,
+        use_context=use_context,
+        delimiter_profile=delimiter_profile,
+    )
 
     f = Frkl(urls, chain)
     result = f.process()

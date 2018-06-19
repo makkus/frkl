@@ -8,25 +8,6 @@ from .chains import *
 from .frkl import Frkl
 from .processors import *
 
-# import yaml
-
-try:
-    set
-except NameError:
-    # noinspection PyDeprecation,PyCompatibility
-    from sets import Set as set
-
-try:
-    # noinspection PyCompatibility
-    from urllib.request import urlopen
-
-    # noinspection PyCompatibility
-    from urllib.parse import urlparse
-except ImportError:
-    # noinspection PyCompatibility
-    from urlparse import urlparse
-    from urllib import urlopen
-
 __metaclass__ = type
 
 log = logging.getLogger("frkl")

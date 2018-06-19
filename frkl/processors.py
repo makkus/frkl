@@ -4,23 +4,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-import copy
-import logging
 import os
-import re
 import sys
 import types
 
 import requests
 import six
 import stevedore
-
-# from builtins import *
-from frutils.defaults import *
-from frutils.frutils import *
-from jinja2 import BaseLoader, Environment
 from six import string_types
 
+# from builtins import *
+from frutils.frutils import *
+from frutils.defaults import DEFAULT_URL_ABBREVIATIONS_FILE
 from .defaults import *
 from .exceptions import FrklConfigException
 
@@ -32,17 +27,6 @@ try:
 except NameError:
     # noinspection PyDeprecation,PyCompatibility
     from sets import Set as set
-
-try:
-    # noinspection PyCompatibility
-    from urllib.request import urlopen
-
-    # noinspection PyCompatibility
-    from urllib.parse import urlparse
-except ImportError:
-    # noinspection PyCompatibility
-    from urlparse import urlparse
-    from urllib import urlopen
 
 __metaclass__ = type
 
@@ -437,7 +421,9 @@ class FrklProcessor(ConfigProcessor):
 
         self.stem_key = init_params[STEM_KEY_NAME]
         self.default_leaf_key = init_params[DEFAULT_LEAF_KEY_NAME]
-        self.default_leaf_default_key = init_params.get(DEFAULT_LEAF_DEFAULT_KEY_NAME, None)
+        self.default_leaf_default_key = init_params.get(
+            DEFAULT_LEAF_DEFAULT_KEY_NAME, None
+        )
         if self.default_leaf_default_key is None:
             raise FrklConfigException("No default leaf default key specified.")
         self.other_valid_keys = init_params.get(OTHER_VALID_KEYS_NAME, [])
@@ -496,9 +482,11 @@ class FrklProcessor(ConfigProcessor):
                         )
 
         else:
-            raise FrklConfigException("Type '{}' not supported for move_key_map.".format(
-                type(self.default_leaf_key_map)
-            ))
+            raise FrklConfigException(
+                "Type '{}' not supported for move_key_map.".format(
+                    type(self.default_leaf_key_map)
+                )
+            )
 
         self.all_keys = set([self.stem_key, self.default_leaf_key])
         self.all_keys.update(self.other_valid_keys)
@@ -624,7 +612,11 @@ class FrklProcessor(ConfigProcessor):
 
                                 if key in self.all_keys:
                                     if isinstance(value, dict):
-                                        dict_merge(new_value.setdefault(key, {}), value, copy_dct=False)
+                                        dict_merge(
+                                            new_value.setdefault(key, {}),
+                                            value,
+                                            copy_dct=False,
+                                        )
                                     else:
                                         new_value[key] = value
 
@@ -641,13 +633,16 @@ class FrklProcessor(ConfigProcessor):
                                         )
 
                                     if isinstance(value, dict):
-                                        new_value.setdefault(migrate_key, {}).update(value)
+                                        new_value.setdefault(migrate_key, {}).update(
+                                            value
+                                        )
                                         new_value[migrate_key].update(value)
                                     else:
-                                        new_value.setdefault(migrate_key, {})[key] = value
+                                        new_value.setdefault(migrate_key, {})[
+                                            key
+                                        ] = value
 
-
-                            #raise FrklConfigException("Mixed keys.")
+                            # raise FrklConfigException("Mixed keys.")
 
             else:
                 # check whether all keys are allowed
@@ -933,7 +928,7 @@ class UrlAbbrevProcessor(ConfigProcessor):
                 )
             if len(opt) != 1:
                 raise Exception(
-                    "Not a valid url, can only have 1 branch: {}".format(value)
+                    "Not a valid url, can only have 1 branch: {}".format(opt)
                 )
             branch = opt[0]
 
@@ -986,8 +981,8 @@ class UrlAbbrevProcessor(ConfigProcessor):
                     postfix = "/".join(tokens)
                     result_string += postfix
 
-                if opt:
-                    opt_appendix = "::".join(opt)
+                # if opt:
+                #    opt_appendix = "::".join(opt)
 
                 if is_templated(result_string):
 

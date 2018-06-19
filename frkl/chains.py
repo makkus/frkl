@@ -3,16 +3,14 @@
 # python 3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from six import string_types
 from frutils.defaults import JINJA_DELIMITER_PROFILES
-
 from .defaults import *
 from .processors import (
     EnsurePythonObjectProcessor,
     EnsureUrlProcessor,
     FrklProcessor,
+    Jinja2TemplateProcessor,
     UrlAbbrevProcessor,
-    Jinja2TemplateProcessor
 )
 
 # simple chain to convert a string (which might be an abbreviated url or path or yaml or json string) into a python object
@@ -22,10 +20,7 @@ LOAD_OBJECT_FROM_URL_CHAIN = [
     EnsurePythonObjectProcessor(),
 ]
 
-LOAD_STRING_FROM_URL_CHAIN = [
-    UrlAbbrevProcessor(),
-    EnsureUrlProcessor(),
-]
+LOAD_STRING_FROM_URL_CHAIN = [UrlAbbrevProcessor(), EnsureUrlProcessor()]
 
 
 # format of processor init dicts
@@ -47,7 +42,14 @@ BOOTSTRAP_PROCESSOR_CHAIN = [
     FrklProcessor(**BOOTSTRAP_FRKL_FORMAT),
 ]
 
-def load_templated_string_from_url_chain(repl_dict, create_python_object=False, use_environment_vars=False, use_context=False, delimiter_profile=JINJA_DELIMITER_PROFILES["default"]):
+
+def load_templated_string_from_url_chain(
+    repl_dict,
+    create_python_object=False,
+    use_environment_vars=False,
+    use_context=False,
+    delimiter_profile=JINJA_DELIMITER_PROFILES["default"],
+):
     """Assemles a chain to load a file (local or remote) and replace templated values in it's content.
 
      Args:
@@ -61,10 +63,14 @@ def load_templated_string_from_url_chain(repl_dict, create_python_object=False, 
         str: the result string
     """
 
-    template_processor = Jinja2TemplateProcessor(repl_dict, use_environment_vars=use_environment_vars, use_context=use_context, delimiter_profile=delimiter_profile)
+    template_processor = Jinja2TemplateProcessor(
+        repl_dict,
+        use_environment_vars=use_environment_vars,
+        use_context=use_context,
+        delimiter_profile=delimiter_profile,
+    )
     chain = LOAD_STRING_FROM_URL_CHAIN + [template_processor]
     if create_python_object:
         chain = chain + [EnsurePythonObjectProcessor()]
 
     return chain
-
