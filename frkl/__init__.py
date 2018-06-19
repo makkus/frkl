@@ -4,6 +4,8 @@ __author__ = """Markus Binsteiner"""
 __email__ = "makkus@posteo.de"
 __version__ = "0.3.0"
 
+# flake8: noqa
+
 from .frkl import (
     Frkl,
     load_object_from_url_or_path,
