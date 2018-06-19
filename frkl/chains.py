@@ -68,4 +68,3 @@ def load_templated_string_from_url_chain(repl_dict, create_python_object=False, 
 
     return chain
 
-
