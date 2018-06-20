@@ -7,13 +7,13 @@ Overview
            :target: https://pypi.python.org/pypi/frkl
            :alt: pypi
 
-.. image:: https://gitlab.com/frkl/frkl/badges/develop/pipeline.svg
-           :target: https://gitlab.com/frkl/frkl/pipelines
-           :alt: pipeline status
-
 .. image:: https://readthedocs.org/projects/frkl/badge/?version=latest
            :target: https://frkl.readthedocs.io/en/latest/?badge=latest
            :alt: documentation
+
+.. image:: https://gitlab.com/frkl/frkl/badges/develop/pipeline.svg
+           :target: https://gitlab.com/frkl/frkl/pipelines
+           :alt: pipeline status
 
 .. image:: https://pyup.io/repos/github/makkus/frkl/shield.svg
            :target: https://pyup.io/repos/github/makkus/frkl/
