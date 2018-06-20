@@ -48,4 +48,4 @@ Click>=6.7
 click-log>=0.2.1
 
 # dev dependencies
-git+https://github.com/makkus/frutils.git
+git+https://gitlab.com/frkl/frutils.git
