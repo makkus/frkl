@@ -10,7 +10,7 @@ with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
 requirements = [
-    "frutils>=0.1.0",
+    "frutils>=0.2.0",
     "requests>=2.13.0",
     "stevedore>=1.28.0",
     "six>=1.11.0",
@@ -27,7 +27,7 @@ setup(
     long_description=readme + "\n\n" + history,
     author="Markus Binsteiner",
     author_email="makkus@frkl.io",
-    url="https://github.com/makkus/frkl",
+    url="https://gitlab.com/frkl/frkl",
     packages=["frkl"],
     package_dir={"frkl": "frkl"},
     entry_points={

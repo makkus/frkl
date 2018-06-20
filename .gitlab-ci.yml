@@ -3,16 +3,12 @@ image: python
 stages:
 - test
 - build
-#- release
+- release
 
 before_script:
 - curl -O https://bootstrap.pypa.io/get-pip.py
 - python get-pip.py
 - pip install tox
-
-#after_script:
-#- pip install codecov
-#- codecov --token=7d117e6b-aab6-4283-ab19-166dafc38cf5
 
 python2:
   image: python:2.7
@@ -59,17 +55,23 @@ flake8:
 
 build:
   stage: build
-  script: tox -e build
+  script:
+    - rm -rf dist
+    - python setup.py sdist bdist_wheel
   artifacts:
     paths:
     - dist/
     expire_in: 1 month
 
-#release:
-#  stage: release
-#  script: tox -e build
-#  artifacts:
-#    paths:
-#    - dist
-#  only:
-#  - tags
+release:
+  stage: release
+  script:
+    - pip install twine
+    - rm -rf dist
+    - python setup.py sdist bdist_wheel
+    - twine upload dist/*
+  artifacts:
+    paths:
+    - dist/
+  only:
+  - tags
