@@ -7,9 +7,9 @@ Overview
            :target: https://pypi.python.org/pypi/frkl
            :alt: pypi
 
-.. image:: https://img.shields.io/travis/makkus/frkl.svg
-           :target: https://travis-ci.org/makkus/frkl
-           :alt: travis
+.. image:: https://gitlab.com/frkl/frkl/badges/develop/pipeline.svg
+           :target: https://gitlab.com/frkl/frkl/pipelines
+           :alt: pipeline status
 
 .. image:: https://readthedocs.org/projects/frkl/badge/?version=latest
            :target: https://frkl.readthedocs.io/en/latest/?badge=latest
