@@ -63,4 +63,3 @@ target/
 *.iml
 
 .pytest_cache
-docs/source
