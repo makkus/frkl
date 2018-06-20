@@ -17,7 +17,7 @@ from frutils import StringYAML
 from frutils.defaults import (
     DEFAULT_URL_ABBREVIATIONS_FILE,
     DEFAULT_URL_ABBREVIATIONS_REPO,
-    JINJA_DELIMITER_PROFILES
+    JINJA_DELIMITER_PROFILES,
 )
 from .exceptions import FrklistConfigException
 
@@ -57,9 +57,7 @@ def create_tasklist(tasklist, context=None, meta=None, vars=None):
 
     log2 = logging.getLogger("stevedore")
     out_hdlr = logging.StreamHandler(sys.stdout)
-    out_hdlr.setFormatter(
-        logging.Formatter("freckles plugin error -> %(message)s")
-    )
+    out_hdlr.setFormatter(logging.Formatter("freckles plugin error -> %(message)s"))
     out_hdlr.setLevel(logging.DEBUG)
     log2.addHandler(out_hdlr)
     log2.setLevel(logging.INFO)
@@ -73,7 +71,7 @@ def create_tasklist(tasklist, context=None, meta=None, vars=None):
     if vars is None:
         vars = {}
 
-    plugin_name= meta.get("tasklist-type", "default")
+    plugin_name = meta.get("tasklist-type", "default")
 
     log.debug("Loading freckles tasklist plugin '{}'...")
 
@@ -86,9 +84,7 @@ def create_tasklist(tasklist, context=None, meta=None, vars=None):
     )
 
     log.debug(
-        "Registered frklist: {}".format(
-            ", ".join(ext.name for ext in mgr.extensions)
-        )
+        "Registered frklist: {}".format(", ".join(ext.name for ext in mgr.extensions))
     )
 
     return mgr.driver
@@ -122,7 +118,10 @@ class Frklist(object):
         self.vars = vars
 
         self.tasklist_pre = self.preprocess_tasklist(
-            copy.deepcopy(tasklist), self.context, copy.deepcopy(self.meta), copy.deepcopy(self.vars)
+            copy.deepcopy(tasklist),
+            self.context,
+            copy.deepcopy(self.meta),
+            copy.deepcopy(self.vars),
         )
 
         self.tasklist = self.expand_and_augment_tasklist(self.tasklist_pre)
@@ -131,13 +130,21 @@ class Frklist(object):
 
         if isinstance(tasklist, string_types):
             self.tasklist_raw_type = "string"
-            content = load_string_from_url_or_path(tasklist, create_python_object=True, template_vars=vars, use_environment_vars=True, delimiter_profile=JINJA_DELIMITER_PROFILES["freckles"])
+            content = load_string_from_url_or_path(
+                tasklist,
+                create_python_object=True,
+                template_vars=vars,
+                use_environment_vars=True,
+                delimiter_profile=JINJA_DELIMITER_PROFILES["freckles"],
+            )
             return content
         elif isinstance(tasklist, (list, tuple, CommentedSeq)):
             self.tasklist_raw_type = "list"
             return tasklist
         else:
-            raise FrklistConfigException("Invalid type for tasklist: {}".format(type(tasklist)))
+            raise FrklistConfigException(
+                "Invalid type for tasklist: {}".format(type(tasklist))
+            )
 
     def process_meta_properties(self, meta_dict, tasklist):
 
@@ -155,7 +162,6 @@ class Frklist(object):
             if "tasklist_parent" not in meta_dict.keys():
                 meta_dict["tasklist_parent"] = None
 
-
         return meta_dict
 
     def render_tasklist(self, **kwargs):
@@ -169,6 +175,7 @@ class Frklist(object):
     def create_context(self, context_params):
 
         return FrklistContext()
+
 
 class DefaultFrklist(Frklist):
 
@@ -187,7 +194,7 @@ class FrklistContext(object):
         trusted_urls=None,
         abbrevs=None,
         environment_paths=None,
-        template_vars=None
+        template_vars=None,
     ):
         """The context a tasklist lives in.
 
