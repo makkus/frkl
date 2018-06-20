@@ -12,6 +12,7 @@ from .frkl import (
     load_string_from_url_or_path,
     load_templated_string_from_url_chain,
 )
+from .frklist import Frklist, FrklistContext
 from .processors import (
     UrlAbbrevProcessor,
     EnsurePythonObjectProcessor,
@@ -19,4 +20,5 @@ from .processors import (
     LoadMoreConfigsProcessor,
     FrklProcessor,
 )
+
 from .helpers import get_full_url, download_cached_file, content_from_url, dict_from_url

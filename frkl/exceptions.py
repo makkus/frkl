@@ -25,3 +25,18 @@ class FrklConfigException(Exception):
             self.errors = [errors]
         else:
             self.errors = errors
+
+
+class FrklistException(Exception):
+    """Base exception class for nsbl."""
+
+    def __init__(self, message):
+
+        super(FrklistException, self).__init__(message)
+
+
+class FrklistConfigException(FrklistException):
+
+    def __init__(self, message):
+
+        super(FrklConfigException, self).__init__(message)

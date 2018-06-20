@@ -47,6 +47,10 @@ setup(
             "split=frkl.processors:YamlTextSplitProcessor",
         ],
         "frkl.collector": ["merge=frkl.callbacks:MergeResultCallback"],
+        "frkl.frklists": [
+             "default=frkl.frklist:DefaultFrklist"
+         ]
+
     },
     include_package_data=True,
     install_requires=requirements,
