@@ -15,6 +15,7 @@ docutils==0.14
 sphinxcontrib-napoleon==0.6.1
 sphinx_redactor_theme==0.0.1
 tornado<=5.0    # pyup: ignore
+restview==2.9.1
 
 # pypi
 
@@ -33,6 +34,7 @@ pytest-pep8==1.0.6
 # other
 
 Click>=6.7
+sphinx-click==1.2.0
 # jinja2>=2.8.1
 # stevedor>=1.25.0
 # future>=0.16.0

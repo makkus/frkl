@@ -1,19 +1,20 @@
+################################
 Welcome to frkl's documentation!
-======================================
-
-Contents:
+################################
 
 .. toctree::
-:maxdepth: 2
+   :maxdepth: 2
+   :caption: Contents:
 
-       readme
-       installation
-       usage
-       contributing
-       authorshistory
+   readme
+   installation
+   usage
+   contributing
+   authors
+   history
 
 Indices and tables
-==================
+******************
 
 * :ref:`genindex`
 * :ref:`modindex`
