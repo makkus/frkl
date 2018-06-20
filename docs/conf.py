@@ -50,6 +50,7 @@ intersphinx_mapping = {
     "urllib3": ("http://urllib3.readthedocs.org/en/latest", None),
     "python": ("http://docs.python.org/3", None),
     "click": ("http://click.pocoo.org/6/", None),
+    "frutils": ("https://frutils.readthedocs.io/en/latest/", None)
 }
 
 # Add any paths that contain templates here, relative to this directory.
