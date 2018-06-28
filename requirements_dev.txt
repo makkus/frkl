@@ -34,7 +34,7 @@ pytest-pep8==1.0.6
 # other
 
 Click>=6.7
-sphinx-click==1.2.0
+sphinx-click==1.3.0
 # jinja2>=2.8.1
 # stevedor>=1.25.0
 # future>=0.16.0
